@@ -114,7 +114,7 @@ ui <- fluidPage(
 
 
 server <- function(input, output, session) {
-
+  
   # Barcode Processing
   barcodes_reactive <- reactiveVal(NULL)
   
@@ -373,18 +373,7 @@ server <- function(input, output, session) {
   
   
   
-  output$downloadData <- downloadHandler(
-    
-    filename = function() {
-      name = str_remove_all(input$dna_extraction_name_input," ")
-      malex = str_remove_all(input$malex_input," ")
-      
-      paste("DNA_ext_setup_",name,"_MALEX",malex,"_",format(Sys.Date(),"%d%b%Y"), ".csv", sep="")
-    },
-    content = function(file) {
-      write.csv(samples_data(), file,row.names = FALSE)
-    }
-  )
+  
   
   observeEvent(input$reset_malex_setup, {
     # Clearing the inputs of Sample receiving tab
@@ -395,7 +384,41 @@ server <- function(input, output, session) {
     updateTextInput(session, "prefix_input", value = "")
     updateNumericInput(session, "starting_number_input", value = 1)
     updateNumericInput(session, "number_of_samples_input", value = 1)
+    output$layout_output <- renderDT({
+      # Return an empty or default data table. 
+      # Replace data.frame() with any default data if needed.
+      data.frame()
+    })
   })
+  
+  output$downloadData <- downloadHandler(
+    
+    filename = function() {
+      name = str_remove_all(input$dna_extraction_name_input, " ")
+      malex = str_remove_all(input$malex_input, " ")
+      
+      paste("DNA_ext_setup_", name, "_MALEX", malex, "_", format(Sys.Date(), "%d%b%Y"), ".csv", sep = "")
+    },
+    
+    content = function(file) {
+      # Write custom header rows
+      header_info <- c(
+        paste("Name:", input$dna_extraction_name_input),
+        paste("MALEX:", input$malex_input),
+        paste("Country:", input$dna_extraction_country_input),
+        paste("Province:", input$dna_extraction_province_input),
+        paste("Date:", format(Sys.Date(), "%d%b%Y")),
+        "",
+        paste(colnames(samples_data()), collapse = ",")
+      )
+      
+      writeLines(header_info, file)
+      
+      
+      # Append the samples_data() to the same file without column names since the headers are custom
+      write.table(samples_data(), file, append = TRUE, row.names = FALSE, col.names = FALSE, sep = ",", quote = TRUE)
+    }
+  )
   
   
   
