@@ -222,8 +222,7 @@ DNAExtractionSetupServer <- function(input,output,session){
                     fontSize = '10px',
                     padding = '1px 1px'  # Set font size to 10 for cell contents
         )
-    }, container = htmltools::div(style = "font-size: 50%; width: 100%;")
-    )
+    })
   })
   
   

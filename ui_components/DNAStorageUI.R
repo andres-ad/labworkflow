@@ -35,6 +35,9 @@ DNAStorageUI <- function(){
              column(6,
                     uiOutput("micronicDetailsDisplay")
              )
-           )
+           ),
+           uiOutput("join_button"),
+           tags$hr(),
+           uiOutput("joined_layout_container")
   )
 }

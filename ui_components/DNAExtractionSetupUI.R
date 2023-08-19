@@ -37,6 +37,7 @@ DNAExtractionSetupUI <- function(){
            rHandsontableOutput("samples_output",height = "200px"),
            tags$hr(),
            DTOutput("layout_output"),
+           tags$hr(),
            downloadButton('downloadData', 'Export table'),
            actionButton("reset_malex_setup", "Reset")
   )
