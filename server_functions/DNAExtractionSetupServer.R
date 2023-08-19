@@ -27,7 +27,7 @@ DNAExtractionSetupServer <- function(input,output,session){
                  ),
                  column(4,
                         numericInput(paste0("starting_number_input_", newRowID), label = "Starting Number:", 
-                                     value = 1, min = 1)
+                                     value = 0, min = 0)
                  ),
                  column(4,
                         numericInput(paste0("number_of_samples_input_", newRowID), label = "Number of Samples:", 
@@ -62,12 +62,17 @@ DNAExtractionSetupServer <- function(input,output,session){
   
   # Function to generate a sequence for a given group
   generate_samples_seq <- function(prefix, start, num) {
+    # If starting number is 0, just return the prefix
+    if (start == 0) {
+      return(rep(prefix, num))
+    }
+    
+    # Original logic for generating LabID
     end <- start + num - 1
     sapply(seq(start, end), function(x) paste0(prefix, sprintf("%03d", x)))
   }
   
-  
-  observeEvent(input$submit_samples, {
+  submit_samples_process <- function(){
     # List to store each group's sequence
     sequences_list <- list()
     
@@ -151,6 +156,10 @@ DNAExtractionSetupServer <- function(input,output,session){
       }
     })
     
+  }
+  
+  observeEvent(input$submit_samples, {
+    submit_samples_process()
   })
   
   output$table_generated <- reactive({ table_generated() })
@@ -164,8 +173,10 @@ DNAExtractionSetupServer <- function(input,output,session){
     }
   })
   
+  
   observeEvent(input$generate_layout, {
     layoutGenerated(TRUE)
+    
     # Initialize an empty layout with row names A-H and column names 1-12
     layout <- matrix(NA, nrow=8, ncol=12)
     rownames(layout) <- LETTERS[1:8]
@@ -180,14 +191,15 @@ DNAExtractionSetupServer <- function(input,output,session){
       row_index <- which(LETTERS == substr(df$Position[i], 1, 1))
       col_index <- as.integer(substr(df$Position[i], 2, 3))
       
-      # Assign LabID to the correct position in the layout matrix
-      layout[row_index, col_index] <- df$LabID[i]
+      # Assign LabID and FieldID to the correct position in the layout matrix
+      combined_info <- paste(df$LabID[i], df$FieldID[i], sep = "<br/>")  # Use <br/> for line break
+      layout[row_index, col_index] <- combined_info
     }
     
     # Render this table to the output
-    
-    output$layout_output <- renderDT({
+    output$layout_output <- DT::renderDT({
       datatable(layout, 
+                escape = FALSE,  # to allow HTML content in cells
                 options = list(
                   columnDefs = list(
                     list(targets = "_all", orderable = FALSE, className = "dt-center"),  # Disable sorting and center content
@@ -212,8 +224,8 @@ DNAExtractionSetupServer <- function(input,output,session){
         )
     }, container = htmltools::div(style = "font-size: 50%; width: 100%;")
     )
-    
   })
+  
   
   
   
@@ -225,13 +237,14 @@ DNAExtractionSetupServer <- function(input,output,session){
     updateTextInput(session, "dna_extraction_country_input", value = "")
     updateTextInput(session, "dna_extraction_province_input", value = "")
     updateTextInput(session, "prefix_input", value = "")
-    updateNumericInput(session, "starting_number_input", value = 1)
+    updateNumericInput(session, "starting_number_input", value = 0)
     updateNumericInput(session, "number_of_samples_input", value = 1)
     output$layout_output <- renderDT({
       # Return an empty or default data table. 
       # Replace data.frame() with any default data if needed.
       data.frame()
     })
+    submit_samples_process()
   })
   
   output$downloadData <- downloadHandler(
@@ -244,6 +257,11 @@ DNAExtractionSetupServer <- function(input,output,session){
     },
     
     content = function(file) {
+      # Update empty FieldID to be the same as LabID
+      updated_samples_data <- samples_data()
+      empty_field_ids <- updated_samples_data$FieldID == ""
+      updated_samples_data$FieldID[empty_field_ids] <- updated_samples_data$LabID[empty_field_ids]
+      
       # Write custom header rows
       header_info <- c(
         paste("Name:", input$dna_extraction_name_input),
@@ -252,15 +270,15 @@ DNAExtractionSetupServer <- function(input,output,session){
         paste("Province:", input$dna_extraction_province_input),
         paste("Date:", format(Sys.Date(), "%d%b%Y")),
         "",
-        paste(colnames(samples_data()), collapse = ",")
+        paste(colnames(updated_samples_data), collapse = ",")
       )
       
       writeLines(header_info, file)
       
-      
-      # Append the samples_data() to the same file without column names since the headers are custom
-      write.table(samples_data(), file, append = TRUE, row.names = FALSE, col.names = FALSE, sep = ",", quote = TRUE)
+      # Append the updated_samples_data to the same file without column names since the headers are custom
+      write.table(updated_samples_data, file, append = TRUE, row.names = FALSE, col.names = FALSE, sep = ",", quote = TRUE)
     }
   )
+  
   
 }

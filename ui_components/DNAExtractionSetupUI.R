@@ -23,7 +23,7 @@ DNAExtractionSetupUI <- function(){
            div(id = "sample_entry_area",
                fluidRow(
                  column(4,class = "print-input-row", textInput("prefix_input", label = "Prefix:", placeholder = "Enter prefix")),
-                 column(4,class = "print-input-row", numericInput("starting_number_input", label = "Starting Number:", value = 1, min = 1)),
+                 column(4,class = "print-input-row", numericInput("starting_number_input", label = "Starting Number:", value = 0, min = 0)),
                  column(4,class = "print-input-row", numericInput("number_of_samples_input", label = "Number of Samples:", value = 1, min = 1))
                )
            ),
