@@ -1,0 +1,43 @@
+DNAExtractionSetupUI <- function(){
+  tabPanel("DNA Extraction Setup", 
+           h4("DNA Extraction Information:"),
+           fluidRow(
+             column(6, 
+                    textInput("dna_extraction_name_input", label = "Name:", 
+                              placeholder = "Enter name")),
+             column(6,
+                    textInput("malex_input", label = "MALEX code:", 
+                              placeholder = "Enter number"))
+           ),
+           br(),
+           fluidRow(
+             column(6, 
+                    textInput("dna_extraction_country_input", label = "Country(s):", 
+                              placeholder = "Enter countries")),
+             column(6,
+                    textInput("dna_extraction_province_input", label = "Province(s):", 
+                              placeholder = "Enter provinces"))
+           ),
+           tags$hr(),
+           h4("Sample Entry"),
+           div(id = "sample_entry_area",
+               fluidRow(
+                 column(4,class = "print-input-row", textInput("prefix_input", label = "Prefix:", placeholder = "Enter prefix")),
+                 column(4,class = "print-input-row", numericInput("starting_number_input", label = "Starting Number:", value = 1, min = 1)),
+                 column(4,class = "print-input-row", numericInput("number_of_samples_input", label = "Number of Samples:", value = 1, min = 1))
+               )
+           ),
+           br(),
+           div(style = "display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;", 
+               actionButton("add_sample_group", "Add Sample Group"),
+               actionButton("remove_sample_group", "Remove Sample Group"),
+               actionButton("submit_samples", "Generate table"),
+               uiOutput("generate_layout_button")
+           ),
+           rHandsontableOutput("samples_output",height = "200px"),
+           tags$hr(),
+           DTOutput("layout_output"),
+           downloadButton('downloadData', 'Export table'),
+           actionButton("reset_malex_setup", "Reset")
+  )
+}
