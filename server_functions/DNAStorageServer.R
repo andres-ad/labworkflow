@@ -104,8 +104,7 @@ DNAStorageServer <- function(input, output, session) {
       return(NULL)
     }
     # Extract the values from the first row
-    rack_id <- data$Rack.ID[1]
-    
+    rack_id <- data$'Rack ID'[1]
     # Format the date
     date <- ymd(data$Date[1])
     formatted_date <- format(date, "%d %b %Y")
@@ -134,75 +133,102 @@ DNAStorageServer <- function(input, output, session) {
       actionButton("join_button", "Join Data")
     }
   })
-
+  
   observeEvent(input$join_button, {
     joinButton(TRUE)
     downloadActive(TRUE)
-
+    
     joined_data <- reactive({
       if (is.null(dna_data_noheader()) || is.null(micronic_data())) {
         return(NULL)
       }
-      dna_subset <- dna_data_noheader()[c("Position", "LabID", "FieldID")]
+      dna_subset <- dna_data_noheader()[c("Position", "LabID", "FieldID","Study_Code","Specimen_Type")]
       micronic_subset <- micronic_data()[, c("Tube Position", "Tube ID")]
       colnames(micronic_subset) = c("TubePosition","TubeID")
       right_join(dna_subset, micronic_subset, by = c("Position" = "TubePosition"))
     })
-
+    
     # Initialize an empty layout with row names A-H and column names 1-12
     joined_layout <- matrix(NA, nrow=8, ncol=12)
     rownames(joined_layout) <- LETTERS[1:8]
     colnames(joined_layout) <- as.character(1:12)
-
+    
     # Fetch the current dataframe
+    mic = micronic_data() 
+    rack_barcode=mic$`Rack ID`[1]
+    
     joined_df <- joined_data()
-    joined_data_output$joinedData <- joined_data()
-
-
+    joined_data_output$joinedData <- joined_data() %>% 
+      mutate(PlateName = input$dna_extraction_plate_name_input,
+             Freezer = input$dna_extraction_freezer_input,
+             Shelf = input$dna_extraction_shelf_input,
+             Basket = input$dna_extraction_basket_input,
+             PlateBarcode = rack_barcode) %>% 
+      select(Position,TubeID,Study_Code,
+             FieldID,Specimen_Type,
+             PlateName,Freezer,
+             Shelf,Basket,
+             PlateBarcode,LabID) %>% 
+      filter(TubeID!="No Code" | FieldID !="NA" | LabID!="NA" )
+    colnames(joined_data_output$joinedData) = c("Position","Tube ID","Study Code",
+                                                "Study Subject","Specimen Type",
+                                                "Plate Name","Freezer Name",
+                                                "Shelf Name","Basket Name",
+                                                "Plate Barcode","Comment")
+    
+    joined_data_output$joinedDataDB = joined_data_output$joinedData %>% 
+      mutate(User = data()$name,
+             MALEX = paste0("MALEX",data()$malex),
+             Date = format(Sys.Date(), "%d%b%Y")) %>% 
+      select('Study Code','Study Subject','Comment','Tube ID','User','MALEX','Date')
+    colnames(joined_data_output$joinedDataDB) = c("Study","FieldID","LabID","GenomicID","User","MALEX","Date")
+    
+    
+    
     # Loop through each row of the dataframe
     for(i in 1:nrow(joined_df)){
       # Extract row and column info from the Position column (e.g., "E02")
       row_index <- which(LETTERS == substr(joined_df$Position[i], 1, 1))
       col_index <- as.integer(substr(joined_df$Position[i], 2, 3))
-
+      
       # Assign LabID and FieldID to the correct position in the layout matrix
       combined_joined_info <- paste(joined_df$LabID[i], joined_df$FieldID[i], joined_df$TubeID[i], sep = "<br/>")  # Use <br/> for line break
       joined_layout[row_index, col_index] <- combined_joined_info
     }
-
+    
     output$joined_layout_container <- renderUI({
       if (joinButton()) {
         DTOutput("joined_layout_output")
       }
     })
-
+    
     # Render this table to the output
     output$joined_layout_output <- renderDT({
-        datatable(joined_layout,
-                  escape = FALSE,  # to allow HTML content in cells
-                  options = list(
-                    columnDefs = list(
-                      list(targets = "_all", orderable = FALSE, className = "dt-center"),  # Disable sorting and center content
-                      list(targets = "_all", className = "dt-head-center")  # Center headers
-                    ),
-                    pageLength = -1,  # Display all rows
-                    dom = 't',  # Just the table (no other controls)
-                    autoWidth = TRUE,  # Auto adjust column width,
-                    redraw=TRUE
+      datatable(joined_layout,
+                escape = FALSE,  # to allow HTML content in cells
+                options = list(
+                  columnDefs = list(
+                    list(targets = "_all", orderable = FALSE, className = "dt-center"),  # Disable sorting and center content
+                    list(targets = "_all", className = "dt-head-center")  # Center headers
                   ),
-                  rownames = TRUE
-        ) %>%
-          formatStyle(columns = 0,
-                      fontWeight = 'bold',
-                      fontSize = '10px',
-                      padding = '1px 1px'
-          ) %>%  # Make row names bold and set font size to 10
-          formatStyle(columns = 1:ncol(joined_layout),
-                      borderRight = '1px solid black',
-                      borderBottom = '1px solid black',
-                      fontSize = '10px',
-                      padding = '1px 1px'  # Set font size to 10 for cell contents
-          )
+                  pageLength = -1,  # Display all rows
+                  dom = 't',  # Just the table (no other controls)
+                  autoWidth = TRUE,  # Auto adjust column width,
+                  redraw=TRUE
+                ),
+                rownames = TRUE
+      ) %>%
+        formatStyle(columns = 0,
+                    fontWeight = 'bold',
+                    fontSize = '10px',
+                    padding = '1px 1px'
+        ) %>%  # Make row names bold and set font size to 10
+        formatStyle(columns = 1:ncol(joined_layout),
+                    borderRight = '1px solid black',
+                    borderBottom = '1px solid black',
+                    fontSize = '10px',
+                    padding = '1px 1px'  # Set font size to 10 for cell contents
+        )
     })
   })
   output$download_button_ui <- renderUI({
@@ -215,14 +241,107 @@ DNAStorageServer <- function(input, output, session) {
   })
   
   output$download_joined_data <- downloadHandler(
+    
     filename = function() {
-      paste("joined_data-", Sys.Date(), ".csv", sep="")
+      name = str_remove_all(data()$name, " ")
+      malex = str_remove_all(data()$malex, " ")
+      
+      paste("DNA_storage_", name, "_MALEX", malex, "_", format(Sys.Date(), "%d%b%Y"), ".csv", sep = "")
     },
+    
     content = function(file) {
       write.csv(joined_data_output$joinedData, file, row.names = FALSE)
     },
     contentType = "text/csv"
   )
+  
+  
+  
+  output$update_button_ui <- renderUI({
+    if (downloadActive()) {
+      tags$div(
+        actionButton("update_database_button", "Update Database"),
+        style = "text-align: center;"  # CSS to center the content within the div
+      )
+    }
+  })
+  
+  
+  observeEvent(input$update_database_button, {
+    ss_url <- "https://docs.google.com/spreadsheets/d/143S5AmwM1OZ-1vbUSNmj8jRUcLQS8LQvDbjvgFauc4s"
+    ss <- googlesheets4::gs4_get(ss_url)
+    sheet_data <- googlesheets4::read_sheet(ss)
+    
+    # Filter out rows where Study is "Controls"
+    filtered_sheet_data <- sheet_data %>% filter(Study != "Controls")
+    
+    # Find matching rows
+    matching_rows <- joined_data_output$joinedDataDB %>% 
+      semi_join(filtered_sheet_data, by = c("FieldID", "LabID", "GenomicID"))
+    
+    # If there are matching rows, display a warning
+    if (nrow(matching_rows) > 0) {
+      
+      # Extract the duplicate IDs
+      dup_field_ids <- unique(matching_rows$FieldID)
+      dup_lab_ids <- unique(matching_rows$LabID)
+      dup_genomic_ids <- unique(matching_rows$GenomicID)
+      
+      # Extract rows of FieldID, LabID, GenomicID for the duplicate entries
+      dup_rows <- matching_rows %>%
+        select(FieldID, LabID, GenomicID)
+      
+      # Convert the data frame to groups of three values
+      rows_as_text <- lapply(1:nrow(dup_rows), function(i) {
+        paste("(", paste(dup_rows[i,], collapse = ", "), ")", sep = "")
+      })
+      
+      # Create a tag list for the warning message
+      warning_content <- tagList(
+        "The following samples are already in the Online Database:",
+        tags$br(), # Line break
+        "You must select Cancel or Proceed at the bottom of this window",
+        tags$br(), # Line break
+        "(Field ID, Lab ID, Genomic ID)",
+        tags$br(),
+        do.call(tagList, lapply(rows_as_text, function(item) {
+          list(tags$span(item), tags$br())
+        }))
+      )
+      
+      # Show the warning in a modal dialog
+      showModal(modalDialog(
+        title = "Warning",
+        warning_content,
+        footer = tagList(
+          actionButton("proceed_update", "Proceed with Update"),
+          actionButton("cancel_update", "Cancel")
+        )
+      ))
+      
+      
+      observeEvent(input$proceed_update, {
+        removeModal()
+        
+        # The rest of the update code here...
+        last_row <- nrow(sheet_data) + 2
+        target_range <- paste0("A", last_row, ":G", last_row + nrow(joined_data_output$joinedDataDB))
+        googlesheets4::range_write(ss, joined_data_output$joinedDataDB, range = target_range, col_names = FALSE)
+      })
+      
+      observeEvent(input$cancel_update, {
+        removeModal()
+        return()
+      })
+    } else {
+      # If there are no matching rows, just proceed with the update
+      last_row <- nrow(sheet_data) + 2
+      target_range <- paste0("A", last_row, ":G", last_row + nrow(joined_data_output$joinedDataDB))
+      googlesheets4::range_write(ss, joined_data_output$joinedDataDB, range = target_range, col_names = FALSE)
+    }
+  })
+  
+  
   
   
 }

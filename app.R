@@ -1,4 +1,6 @@
-libraries <- c("shiny", "shinyjs", "rhandsontable", "DT", "writexl", "tidyverse")
+libraries <- c("shiny", "shinyjs", "rhandsontable", 
+               "DT", "writexl", "tidyverse",
+               "googlesheets4","gargle")
 lapply(libraries, library, character.only = TRUE)
 
 
@@ -9,12 +11,13 @@ lapply(list.files("server_functions",pattern="\\.R$",full.names = TRUE),
 
 ##### UI
 ui <- fluidPage(
-  titlePanel("ARMMOR Lab Sample Tracking"),
+  titlePanel("ARMMOR Lab Workflow"),
   useShinyjs(),
   tabsetPanel(
     sampleReceivingUI(),
     DNAExtractionSetupUI(),
-    DNAStorageUI()
+    DNAStorageUI(),
+    qFalidSetupUI()
   )
 )
 
@@ -23,6 +26,7 @@ server <- function(input, output, session) {
   sampleReceivingServer(input,output,session)
   DNAExtractionSetupServer(input,output,session)
   DNAStorageServer(input,output,session)
+  qFalidSetupServer(input,output,session)
 }
 
 shinyApp(ui = ui, server = server)
