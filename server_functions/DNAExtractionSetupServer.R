@@ -24,7 +24,7 @@ DNAExtractionSetupServer <- function(input,output,session){
                  column(2,
                         tags$label(NULL),
                         selectInput(paste0("study_input_", newRowID), label = NULL, 
-                                    choices = c("GenE8","Other"),
+                                    choices = c("GenE8","Controls","Other"),
                                     selected = "GenE8")
                  ),
                  
