@@ -6,7 +6,6 @@ lapply(list.files("ui_components",pattern="\\.R$",full.names = TRUE),
        source)
 lapply(list.files("server_functions",pattern="\\.R$",full.names = TRUE),
        source)
-source("custom_functions.R")
 
 ##### UI
 ui <- fluidPage(
