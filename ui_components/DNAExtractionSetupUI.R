@@ -22,9 +22,31 @@ DNAExtractionSetupUI <- function(){
            h4("Sample Entry"),
            div(id = "sample_entry_area",
                fluidRow(
-                 column(4,class = "print-input-row", textInput("prefix_input", label = "Prefix:", placeholder = "Enter prefix")),
-                 column(4,class = "print-input-row", numericInput("starting_number_input", label = "Starting Number:", value = 0, min = 0)),
-                 column(4,class = "print-input-row", numericInput("number_of_samples_input", label = "Number of Samples:", value = 1, min = 1))
+                 column(2,class = "print-input-row",selectInput("study_input", label = "Study:", 
+                                                                choices = c("GenE8","Other"),
+                                                                selected = "GenE8")),
+                 column(2,class = "print-input-row", textInput("prefix_input", label = "Prefix:", placeholder = "Enter prefix")),
+                 column(2,class = "print-input-row", numericInput("starting_number_input", label = "Start#:", value = 0, min = 0)),
+                 column(2,class = "print-input-row", numericInput("number_of_samples_input", label = "#:", value = 1, min = 1)),
+                 column(2,class = "print-input-row",selectInput("content_input", label = "Content:", 
+                                                                choices = c("DNA(DBS)","DNA(RDT)","Other"),
+                                                                selected = "DNA(DBS)")),
+                 column(2,class = "print-input-row",conditionalPanel(
+                   condition = 'input.study_input == "Other"',
+                   textInput("other_study_input", 
+                             label = "Study:",
+                             placeholder = "Enter"
+                   )
+                 )
+                 ), 
+                 column(2,class = "print-input-row",conditionalPanel(
+                   condition = 'input.content_input == "Other"',
+                   textInput("other_content_input", 
+                             label = "Content:",
+                             placeholder = "Enter"
+                   )
+                 )
+                 )
                )
            ),
            br(),

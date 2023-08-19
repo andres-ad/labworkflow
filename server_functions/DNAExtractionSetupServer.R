@@ -21,19 +21,58 @@ DNAExtractionSetupServer <- function(input,output,session){
     rowID <- paste0("sample_row_", newRowID)
     
     newUI <- div(id = rowID, class="row",
-                 column(4, 
-                        textInput(paste0("prefix_input_", newRowID), label = "Prefix:", 
+                 column(2,
+                        tags$label(NULL),
+                        selectInput(paste0("study_input_", newRowID), label = NULL, 
+                                    choices = c("GenE8","Other"),
+                                    selected = "GenE8")
+                 ),
+                 
+                 column(2, 
+                        tags$label(NULL),
+                        textInput(paste0("prefix_input_", newRowID), label = NULL, 
                                   placeholder = "Enter prefix")
                  ),
-                 column(4,
-                        numericInput(paste0("starting_number_input_", newRowID), label = "Starting Number:", 
+                 column(2,
+                        tags$label(NULL),
+                        numericInput(paste0("starting_number_input_", newRowID), label = NULL, 
                                      value = 0, min = 0)
                  ),
-                 column(4,
-                        numericInput(paste0("number_of_samples_input_", newRowID), label = "Number of Samples:", 
+                 column(2,
+                        tags$label(NULL),
+                        numericInput(paste0("number_of_samples_input_", newRowID), label = NULL, 
                                      value = 1, min = 1)
+                 ),
+                 
+                 column(2,
+                        tags$label(NULL),
+                        selectInput(paste0("content_input_", newRowID), label = NULL, 
+                                    choices = c("DNA(DBS)","DNA(RDT)","Other"),
+                                    selected = "DNA(DBS)")
+                 ),
+                 
+                 column(2,
+                        tags$label(NULL),
+                        conditionalPanel(
+                          condition = paste0('input.', "study_input_", newRowID, ' == "Other"'),
+                          textInput(paste0("other_study_input_", newRowID), label = NULL, 
+                                    placeholder = "Enter study")
+                        )
+                 ),
+                 
+                 column(2,
+                        tags$label(NULL),
+                        conditionalPanel(
+                          condition = paste0('input.', "content_input_", newRowID, ' == "Other"'),
+                          textInput(paste0("other_content_input_", newRowID), label = NULL, 
+                                    placeholder = "Enter content")
+                        )
                  )
     )
+    
+    
+    
+    
     
     # Insert new UI elements above the button
     insertUI(
@@ -77,9 +116,26 @@ DNAExtractionSetupServer <- function(input,output,session){
     sequences_list <- list()
     
     # First group (always present)
-    sequences_list[[1]] <- generate_samples_seq(input$prefix_input, 
-                                                input$starting_number_input, 
-                                                input$number_of_samples_input)
+    if (input$study_input == "Other") {
+      study_code <- input$other_study_input
+    } else {
+      study_code <- input$study_input
+    }
+    
+    if (input$content_input == "Other") {
+      content_type <- input$other_content_input
+    } else {
+      content_type <- input$content_input
+    }
+    
+    
+    sequences_list[[1]] <- list(
+      LabID = generate_samples_seq(input$prefix_input, 
+                                   input$starting_number_input, 
+                                   input$number_of_samples_input),
+      Study_Code = rep(study_code, input$number_of_samples_input),
+      Specimen_Type = rep(content_type, input$number_of_samples_input)
+    )
     
     # Additional groups (if any)
     if(numRows() > 0) {  # <-- Check if additional rows exist
@@ -87,16 +143,34 @@ DNAExtractionSetupServer <- function(input,output,session){
         prefix <- input[[paste0("prefix_input_", i)]]
         start <- input[[paste0("starting_number_input_", i)]]
         num <- input[[paste0("number_of_samples_input_", i)]]
-        
         # Make sure all fields have valid values before generating sequences
         if(!is.null(prefix) && !is.null(start) && !is.null(num)) {
-          sequences_list[[i + 1]] <- generate_samples_seq(prefix, start, num)
+          study_code_selected <- input[[paste0("study_input_", i)]]
+          if (study_code_selected == "Other") {
+            study_code <- input[[paste0("other_study_input_", i)]]
+          } else {
+            study_code <- study_code_selected
+          }
+          
+          content_type_selected <- input[[paste0("content_input_", i)]]
+          if (content_type_selected == "Other") {
+            content_type <- input[[paste0("other_content_input_", i)]]
+          } else {
+            content_type <- content_type_selected
+          }
+          
+          sequences_list[[i + 1]] <- list(
+            LabID = generate_samples_seq(prefix, start, num),
+            Study_Code = rep(study_code, num),
+            Specimen_Type = rep(content_type, num)
+          )
         }
       }
     }
     
     # Before converting list to dataframe, check the total number of samples
-    total_samples <- sum(sapply(sequences_list, length))
+    total_samples <- sum(sapply(sequences_list, 
+                                function(x) length(x$LabID)))
     
     # If total_samples exceeds 96, display a warning
     if (total_samples > 96) {
@@ -109,7 +183,12 @@ DNAExtractionSetupServer <- function(input,output,session){
     }
     
     # Convert list to dataframe
-    samples_df <- data.frame(LabID = unlist(sequences_list))
+    samples_df <- do.call(rbind,
+                          lapply(sequences_list, 
+                                 function(x) data.frame(
+                                   LabID = x$LabID, 
+                                   Study_Code = x$Study_Code, 
+                                   Specimen_Type = x$Specimen_Type)))
     
     # Get the number of rows in samples_df to help in generating Well and Column columns
     num_rows <- nrow(samples_df)
@@ -126,7 +205,7 @@ DNAExtractionSetupServer <- function(input,output,session){
     samples_df$Position <- paste0(samples_df$Well,samples_df$Column)
     samples_df$FieldID <- ""
     # Reorder the columns
-    samples_df <- samples_df[, c('Position', 'LabID', 'FieldID')]
+    samples_df <- samples_df[, c('Position','Study_Code','Specimen_Type','LabID', 'FieldID')]
     
     # Existing samples_data
     previous_samples <- samples_data()
