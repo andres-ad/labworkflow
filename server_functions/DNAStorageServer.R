@@ -32,6 +32,11 @@ DNAStorageServer <- function(input, output, session) {
   joinButton = reactiveVal(FALSE)
   downloadActive <- reactiveVal(FALSE)
   joined_data_output <- reactiveValues(joinedData=NULL)
+  joinedfileUploaded <- reactiveVal(FALSE)
+  joinedDataDB_react <-reactiveVal(FALSE)
+  joinedfileUploaded_forinputs1<- reactiveVal(FALSE)
+  joinedfileUploaded_forinputs2<- reactiveVal(FALSE)
+  joinedfileUploaded_forinputs3<- reactiveVal(FALSE)
   
   dna_data_noheader <- reactive({
     inFile <- input$file1
@@ -127,110 +132,177 @@ DNAStorageServer <- function(input, output, session) {
   })
   
   
+  observeEvent(input$joined_file_button, {
+    output$upload_built_file <- renderUI({
+      tagList(
+        h4("This file needs to have the conventional naming, eg: DNA_storage_Jaishree_MALEX156_19Aug2023"),
+        fileInput("file_upload_built_file", 
+                  "Choose Joined file", 
+                  accept = c("text/csv", "text/comma-separated-values,text/plain", ".csv")
+        )
+      )
+    })
+  })
+  
+  joined_data_upload <- reactive({
+    inFile <- input$file_upload_built_file
+    if (is.null(inFile)) {
+      return(NULL)
+    }
+    # Read the Micronic CSV file
+    data <- read.csv(inFile$datapath, header = TRUE,check.names = FALSE)
+    return(data)
+  })
+  
+  observeEvent(joined_data_upload(), {
+    
+    if(!is.null(joined_data_upload())) {
+      joined_data_output$joinedData <- joined_data_upload()
+      joinedfileUploaded(TRUE)
+    }
+  })
+  
+  
   
   output$join_button <- renderUI({
     if (!is.null(micronic_data()) & !is.null(dna_data_noheader())) {
       actionButton("join_button", "Join Data")
     }
   })
-  
   observeEvent(input$join_button, {
-    joinButton(TRUE)
-    downloadActive(TRUE)
-    
-    joined_data <- reactive({
-      if (is.null(dna_data_noheader()) || is.null(micronic_data())) {
-        return(NULL)
-      }
-      dna_subset <- dna_data_noheader()[c("Position", "LabID", "FieldID","Study_Code","Specimen_Type")]
-      micronic_subset <- micronic_data()[, c("Tube Position", "Tube ID")]
-      colnames(micronic_subset) = c("TubePosition","TubeID")
-      right_join(dna_subset, micronic_subset, by = c("Position" = "TubePosition"))
-    })
-    
-    # Initialize an empty layout with row names A-H and column names 1-12
-    joined_layout <- matrix(NA, nrow=8, ncol=12)
-    rownames(joined_layout) <- LETTERS[1:8]
-    colnames(joined_layout) <- as.character(1:12)
-    
-    # Fetch the current dataframe
-    mic = micronic_data() 
-    rack_barcode=mic$`Rack ID`[1]
-    
-    joined_df <- joined_data()
-    joined_data_output$joinedData <- joined_data() %>% 
-      mutate(PlateName = input$dna_extraction_plate_name_input,
-             Freezer = input$dna_extraction_freezer_input,
-             Shelf = input$dna_extraction_shelf_input,
-             Basket = input$dna_extraction_basket_input,
-             PlateBarcode = rack_barcode) %>% 
-      select(Position,TubeID,Study_Code,
-             FieldID,Specimen_Type,
-             PlateName,Freezer,
-             Shelf,Basket,
-             PlateBarcode,LabID) %>% 
-      filter(TubeID!="No Code" | FieldID !="NA" | LabID!="NA" )
-    colnames(joined_data_output$joinedData) = c("Position","Tube ID","Study Code",
-                                                "Study Subject","Specimen Type",
-                                                "Plate Name","Freezer Name",
-                                                "Shelf Name","Basket Name",
-                                                "Plate Barcode","Comment")
-    
-    joined_data_output$joinedDataDB = joined_data_output$joinedData %>% 
-      mutate(User = data()$name,
-             MALEX = paste0("MALEX",data()$malex),
-             Date = format(Sys.Date(), "%d%b%Y")) %>% 
-      select('Study Code','Study Subject','Comment','Tube ID','User','MALEX','Date')
-    colnames(joined_data_output$joinedDataDB) = c("Study","FieldID","LabID","GenomicID","User","MALEX","Date")
-    
-    
-    
-    # Loop through each row of the dataframe
-    for(i in 1:nrow(joined_df)){
-      # Extract row and column info from the Position column (e.g., "E02")
-      row_index <- which(LETTERS == substr(joined_df$Position[i], 1, 1))
-      col_index <- as.integer(substr(joined_df$Position[i], 2, 3))
+    if( !joinedfileUploaded()){
+      joinButton(TRUE)
+      downloadActive(TRUE)
+      joined_data <- reactive({
+        if (is.null(dna_data_noheader()) || is.null(micronic_data())) {
+          return(NULL)
+        }
+        dna_subset <- dna_data_noheader()[c("Position", "LabID", "FieldID","Study_Code","Specimen_Type")]
+        micronic_subset <- micronic_data()[, c("Tube Position", "Tube ID")]
+        colnames(micronic_subset) = c("TubePosition","TubeID")
+        right_join(dna_subset, micronic_subset, by = c("Position" = "TubePosition"))
+      })
       
-      # Assign LabID and FieldID to the correct position in the layout matrix
-      combined_joined_info <- paste(joined_df$LabID[i], joined_df$FieldID[i], joined_df$TubeID[i], sep = "<br/>")  # Use <br/> for line break
-      joined_layout[row_index, col_index] <- combined_joined_info
+      
+      
+      # Fetch the current dataframe
+      mic = micronic_data() 
+      rack_barcode=mic$`Rack ID`[1]
+      
+      joined_df <- joined_data()
+      
+      
+      
+      joined_data_output$joinedData <- joined_data() %>% 
+        mutate(PlateName = input$dna_extraction_plate_name_input,
+               Freezer = input$dna_extraction_freezer_input,
+               Shelf = input$dna_extraction_shelf_input,
+               Basket = input$dna_extraction_basket_input,
+               PlateBarcode = rack_barcode) %>% 
+        select(Position,TubeID,Study_Code,
+               FieldID,Specimen_Type,
+               PlateName,Freezer,
+               Shelf,Basket,
+               PlateBarcode,LabID) %>% 
+        filter(TubeID!="No Code" | FieldID !="NA" | LabID!="NA" )
+      colnames(joined_data_output$joinedData) = c("Position","Tube ID","Study Code",
+                                                  "Study Subject","Specimen Type",
+                                                  "Plate Name","Freezer Name",
+                                                  "Shelf Name","Basket Name",
+                                                  "Plate Barcode","Comment")
+      
     }
-    
-    output$joined_layout_container <- renderUI({
-      if (joinButton()) {
-        DTOutput("joined_layout_output")
-      }
-    })
-    
-    # Render this table to the output
-    output$joined_layout_output <- renderDT({
-      datatable(joined_layout,
-                escape = FALSE,  # to allow HTML content in cells
-                options = list(
-                  columnDefs = list(
-                    list(targets = "_all", orderable = FALSE, className = "dt-center"),  # Disable sorting and center content
-                    list(targets = "_all", className = "dt-head-center")  # Center headers
-                  ),
-                  pageLength = -1,  # Display all rows
-                  dom = 't',  # Just the table (no other controls)
-                  autoWidth = TRUE,  # Auto adjust column width,
-                  redraw=TRUE
-                ),
-                rownames = TRUE
-      ) %>%
-        formatStyle(columns = 0,
-                    fontWeight = 'bold',
-                    fontSize = '10px',
-                    padding = '1px 1px'
-        ) %>%  # Make row names bold and set font size to 10
-        formatStyle(columns = 1:ncol(joined_layout),
-                    borderRight = '1px solid black',
-                    borderBottom = '1px solid black',
-                    fontSize = '10px',
-                    padding = '1px 1px'  # Set font size to 10 for cell contents
-        )
-    })
   })
+  
+  layout_react = reactiveVal(NULL)
+  
+  
+  observeEvent(reactiveValuesToList(input)[c("join_button","file_upload_built_file")],{
+    if(joinedfileUploaded()| joinButton()){
+      joinedDataDB = joined_data_output$joinedData %>% 
+        mutate(User = ifelse(joinButton(), data()$name,
+                             ifelse(joinedfileUploaded(),
+                                    str_extract(input$file_upload_built_file, "(?<=DNA_storage_)[^_]+"),
+                                    "Placeholder")),
+               MALEX = ifelse(joinButton(), paste0("MALEX", data()$malex),
+                              ifelse(joinedfileUploaded(), 
+                                     paste0("MALEX",as.numeric(str_extract(input$file_upload_built_file, "(?<=_MALEX)\\d+"))),
+                                     "Placeholder")),
+               Date = ifelse(joinButton(), format(Sys.Date(), "%d%b%Y"),
+                             ifelse(joinedfileUploaded(), 
+                                    str_remove_all(sapply(strsplit(input$file_upload_built_file$name,"_"),tail,1),".csv"),
+                                    "Placeholder"))
+        )%>% 
+        select('Study Code','Study Subject','Comment','Tube ID','User','MALEX','Date')
+      colnames(joinedDataDB) = c("Study","FieldID","LabID","GenomicID","User","MALEX","Date")
+      joinedDataDB_react(joinedDataDB)
+      joined_df <- joined_data_output$joinedData %>% 
+        select(Position,Comment,'Study Subject','Tube ID')
+      colnames(joined_df) <- c("Position","LabID","FieldID","TubeID")
+      
+      # Initialize an empty layout with row names A-H and column names 1-12
+      joined_layout <- matrix(NA, nrow=8, ncol=12)
+      rownames(joined_layout) <- LETTERS[1:8]
+      colnames(joined_layout) <- as.character(1:12)
+      
+      
+      # Loop through each row of the dataframe
+      for(i in 1:nrow(joined_df)){
+        # Extract row and column info from the Position column (e.g., "E02")
+        row_index <- which(LETTERS == substr(joined_df$Position[i], 1, 1))
+        col_index <- as.integer(substr(joined_df$Position[i], 2, 3))
+        
+        # Assign LabID and FieldID to the correct position in the layout matrix
+        combined_joined_info <- paste(joined_df$LabID[i], joined_df$FieldID[i], joined_df$TubeID[i], sep = "<br/>")  # Use <br/> for line break
+        joined_layout[row_index, col_index] <- combined_joined_info
+      }
+      layout_react(joined_layout)
+      joinedfileUploaded(FALSE)
+      joinButton(FALSE)
+    }
+  })
+  
+  ###### NOTE THAT THERE IS SOMETHING WERID HERE. THIS BIT WENT ON A LOOP UNLESS I MADE THOSE LAST 2 FALSE, I COULDNT FIGURE OUT WHAT WAS BEING UPDATED
+  
+  observeEvent(layout_react(),{
+    if (!is.null(layout_react())){
+      
+      output$joined_layout_container <- renderUI({
+        DTOutput("joined_layout_output")
+      })
+      
+      # Render this table to the output
+      output$joined_layout_output <- renderDT({
+        datatable(layout_react(),
+                  escape = FALSE,  # to allow HTML content in cells
+                  options = list(
+                    columnDefs = list(
+                      list(targets = "_all", orderable = FALSE, className = "dt-center"),  # Disable sorting and center content
+                      list(targets = "_all", className = "dt-head-center")  # Center headers
+                    ),
+                    pageLength = -1,  # Display all rows
+                    dom = 't',  # Just the table (no other controls)
+                    autoWidth = TRUE,  # Auto adjust column width,
+                    redraw=TRUE
+                  ),
+                  rownames = TRUE
+        ) %>%
+          formatStyle(columns = 0,
+                      fontWeight = 'bold',
+                      fontSize = '10px',
+                      padding = '1px 1px'
+          ) %>%  # Make row names bold and set font size to 10
+          formatStyle(columns = 1:ncol(layout_react()),
+                      borderRight = '1px solid black',
+                      borderBottom = '1px solid black',
+                      fontSize = '10px',
+                      padding = '1px 1px'  # Set font size to 10 for cell contents
+          )
+      })
+    }
+  })
+  
+  
   output$download_button_ui <- renderUI({
     if (downloadActive()) {
       tags$div(
@@ -258,7 +330,7 @@ DNAStorageServer <- function(input, output, session) {
   
   
   output$update_button_ui <- renderUI({
-    if (downloadActive()) {
+    if (!is.null(layout_react())) {
       tags$div(
         actionButton("update_database_button", "Update Database"),
         style = "text-align: center;"  # CSS to center the content within the div
@@ -273,10 +345,15 @@ DNAStorageServer <- function(input, output, session) {
     sheet_data <- googlesheets4::read_sheet(ss)
     
     # Filter out rows where Study is "Controls"
-    filtered_sheet_data <- sheet_data %>% filter(Study != "Controls")
+    filtered_sheet_data <- sheet_data %>% filter(Study != "Controls")%>% 
+      mutate_all(as.character)
+    
+    data2join =joinedDataDB_react() %>% 
+      mutate_all(as.character)
+    
     
     # Find matching rows
-    matching_rows <- joined_data_output$joinedDataDB %>% 
+    matching_rows <- data2join %>% 
       semi_join(filtered_sheet_data, by = c("FieldID", "LabID", "GenomicID"))
     
     # If there are matching rows, display a warning
@@ -325,8 +402,8 @@ DNAStorageServer <- function(input, output, session) {
         
         # The rest of the update code here...
         last_row <- nrow(sheet_data) + 2
-        target_range <- paste0("A", last_row, ":G", last_row + nrow(joined_data_output$joinedDataDB))
-        googlesheets4::range_write(ss, joined_data_output$joinedDataDB, range = target_range, col_names = FALSE)
+        target_range <- paste0("A", last_row, ":G", last_row + nrow(data2join))
+        googlesheets4::range_write(ss, data2join, range = target_range, col_names = FALSE)
       })
       
       observeEvent(input$cancel_update, {
@@ -336,8 +413,8 @@ DNAStorageServer <- function(input, output, session) {
     } else {
       # If there are no matching rows, just proceed with the update
       last_row <- nrow(sheet_data) + 2
-      target_range <- paste0("A", last_row, ":G", last_row + nrow(joined_data_output$joinedDataDB))
-      googlesheets4::range_write(ss, joined_data_output$joinedDataDB, range = target_range, col_names = FALSE)
+      target_range <- paste0("A", last_row, ":G", last_row + nrow(data2join))
+      googlesheets4::range_write(ss, data2join, range = target_range, col_names = FALSE)
     }
   })
   
