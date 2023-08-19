@@ -38,6 +38,9 @@ DNAStorageUI <- function(){
            ),
            uiOutput("join_button"),
            tags$hr(),
-           uiOutput("joined_layout_container")
+           uiOutput("joined_layout_container"),
+           tags$hr(),
+           uiOutput("download_button_ui"),
+           tags$hr()
   )
 }

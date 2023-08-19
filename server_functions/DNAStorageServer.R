@@ -30,6 +30,8 @@ read_custom_format <- function(file_path) {
 DNAStorageServer <- function(input, output, session) {
   
   joinButton = reactiveVal(FALSE)
+  downloadActive <- reactiveVal(FALSE)
+  joined_data_output <- reactiveValues(joinedData=NULL)
   
   dna_data_noheader <- reactive({
     inFile <- input$file1
@@ -135,6 +137,7 @@ DNAStorageServer <- function(input, output, session) {
 
   observeEvent(input$join_button, {
     joinButton(TRUE)
+    downloadActive(TRUE)
 
     joined_data <- reactive({
       if (is.null(dna_data_noheader()) || is.null(micronic_data())) {
@@ -153,6 +156,7 @@ DNAStorageServer <- function(input, output, session) {
 
     # Fetch the current dataframe
     joined_df <- joined_data()
+    joined_data_output$joinedData <- joined_data()
 
 
     # Loop through each row of the dataframe
@@ -201,5 +205,24 @@ DNAStorageServer <- function(input, output, session) {
           )
     })
   })
-
+  output$download_button_ui <- renderUI({
+    if (downloadActive()) {
+      tags$div(
+        downloadButton("download_joined_data", "Download CSV"),
+        style = "text-align: center;"  # CSS to center the content within the div
+      )
+    }
+  })
+  
+  output$download_joined_data <- downloadHandler(
+    filename = function() {
+      paste("joined_data-", Sys.Date(), ".csv", sep="")
+    },
+    content = function(file) {
+      write.csv(joined_data_output$joinedData, file, row.names = FALSE)
+    },
+    contentType = "text/csv"
+  )
+  
+  
 }
