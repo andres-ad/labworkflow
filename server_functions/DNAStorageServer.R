@@ -323,6 +323,16 @@ DNAStorageServer <- function(input, output, session) {
     
     content = function(file) {
       write.csv(joined_data_output$joinedData, file, row.names = FALSE)
+      
+      
+      name = str_remove_all(data()$name, " ")
+      malex = str_remove_all(data()$malex, " ")
+      
+      fileupload_name = paste("DNA_storage_", name, "_MALEX", malex, "_", format(Sys.Date(), "%d%b%Y"), ".csv", sep = "")
+      
+      drive_folder <- drive_get(as_id("1wEgG74WOaOWd1j0dR1xjmw7x0iyrqD2Z"))
+      drive_upload(file, path = drive_folder, name = fileupload_name)
+      
     },
     contentType = "text/csv"
   )
