@@ -1,5 +1,15 @@
 qFalidSetupUI <- function(){
-  tabPanel("qFalid",
+  tabPanel("qFalid Setup",
+           h4("qFalid Information:"),
+           fluidRow(
+             column(6, 
+                    textInput("qFalid_name_input", label = "Name:", 
+                              placeholder = "Enter name")),
+             column(6,
+                    textInput("qfalid_input", label = "qFALID code:", 
+                              placeholder = "Enter number"))
+           ),
+           br(),
            h4("Upload Micronic scan"),
            h6("This should be a scan of the Micronic plate containing the tubes in the same positions as they will go into the qPCR plate."),
            fluidRow(
@@ -15,6 +25,9 @@ qFalidSetupUI <- function(){
            tags$hr(),
            uiOutput("get_data_button"),
            uiOutput("warning_message"),
-           DTOutput("layout_table")
+           DTOutput("layout_table"),
+           tags$hr(),
+           uiOutput("qfalid_export_button_ui"),
+           tags$hr()
   )
 }

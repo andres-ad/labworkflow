@@ -5,18 +5,16 @@ qFalidSetupServer <- function(input, output, session) {
   warning_message <- reactiveVal(NULL) 
   
   
-  standard_values <- list(
-    A01 = "10,000", B01 = "10,000", C01 = "10,000",
-    D01 = "1,000", E01 = "1,000", F01 = "1,000",
-    G01 = "100", H01 = "100", A02 = "100",
-    B02 = "10", C02 = "10", D02 = "10",
-    E02 = "1", F02 = "1", G02 = "1",
-    H02 = "0.1", A03 = "0.1", B03 = "0.1",
-    C03 = "0", E12 = "NTC"
-  )
+  standard_values <- data.frame(Position = c("A01","B01","C01","D01","E01","F01","G01","H01",
+                                             "A02","B02","C02","D02","E02","F02","G02","H02",
+                                             "A03","B03","C03","E12"),
+                                LabID = c("10,000","10,000","10,000","1,000","1,000","1,000","100","100",
+                                          "100","10","10","10", "1", "1", "1", "0.1",
+                                          "0.1", "0.1", "0", "NTC"))
+  standard_values$TubeID = standard_values$LabID
+  standard_values$FieldID = standard_values$LabID
   
-  
-  
+  colnames(standard_values) = c("Tube Position", "LabID","Tube ID","FieldID")
   
   # Reactive expression for reading the uploaded CSV file
   qfalid_scan <- reactive({
@@ -75,29 +73,26 @@ qFalidSetupServer <- function(input, output, session) {
     }
   })
   
+  conflicts <- reactiveVal(NULL)
   
   observeEvent(input$get_data_btn, {
     if (has_required_columns()) {
       # Read the uploaded file
       uploaded_data <- qfalid_scan()
       # Filter rows where "Tube ID" is not "No Code"
-      uploaded_data <- uploaded_data[uploaded_data$`Tube ID` != "No Code",]
+      uploaded_data_filter <- uploaded_data[uploaded_data$`Tube ID` != "No Code",]
       
       # Read the Google Sheet
       ss_url <- "https://docs.google.com/spreadsheets/d/143S5AmwM1OZ-1vbUSNmj8jRUcLQS8LQvDbjvgFauc4s"
       sheet_data <- googlesheets4::read_sheet(ss_url)
       
       # Match "Tube ID" from uploaded_data with "GenomicID" from sheet_data
-      matched_data <- uploaded_data %>%
+      matched_data <- uploaded_data_filter %>%
         dplyr::left_join(sheet_data, by = c("Tube ID" = "GenomicID"))
       # Create a summary table containing the relevant columns
       summary_table <- matched_data %>%
         dplyr::select(`Tube Position`, `Tube ID`, LabID, FieldID)
       
-      # Display the summary table in the Shiny UI
-      output$summary_table <- DT::renderDataTable({
-        DT::datatable(summary_table)
-      })
       
       # Check for unmatched "Tube ID" and set the warning message
       unmatched_rows <- is.na(summary_table$FieldID)
@@ -107,74 +102,84 @@ qFalidSetupServer <- function(input, output, session) {
       } else {
         warning_message(NULL) # Reset if no unmatched positions
       }
-    
-      conflicts <- list()
       
-      # Check and apply standard values
-      # Check and apply standard values
-      for (position in names(standard_values)) {
-        if (position %in% summary_table$`Tube Position` && summary_table$`Tube ID`[summary_table$`Tube Position` == position] != "No Code") {
-          conflicts <- append(conflicts, position)
-        } else {
-          # Create a new row with the standard values for the given position, aligned with the columns in summary_table
-          new_row <- data.frame(
-            `Tube Position` = position,
-            `Tube ID` = "", # Set to "No Code" or other appropriate value
-            LabID = standard_values[[position]],
-            FieldID = "",
-            # Add other columns as needed to match the structure of matched_data
-            stringsAsFactors = FALSE
-          )
-          colnames(new_row) = c("Tube Position", "Tube ID", "LabID", "FieldID")
-          # Combine the new row with summary_table
-          summary_table <- rbind(summary_table, new_row)
+      summary_table_standards = reactiveVal(summary_table)
+      # Update the value of conflicts based on the uploaded data
+      conflict_positions <- which(summary_table$`Tube Position` %in% standard_values$'Tube Position')
+      conflicts(conflict_positions)
+      observe({
+        conflict_values <- conflicts()
+        # If there are conflicts, display a warning and present options
+        if (length(conflict_values) > 0) {
+          
+          showModal(modalDialog(
+            title = "Warning",
+            paste("The following Standard positions are not empty:", paste(summary_table$`Tube Position`[conflict_values], collapse = ", ")),
+            footer = tagList(
+              actionButton("keep_scanned", "Keep scanned tubes"),
+              actionButton("keep_standards", "Keep standards"),
+              modalButton("Cancel")
+            )
+          ))
+          summary_table_standards(summary_table)
+        }else{
+          summary_table_standards(rbind(standard_values,summary_table))
         }
-      }
+      })
       
       
-      # If there are conflicts, display a warning and present options
-      if (length(conflicts) > 0) {
-        showModal(modalDialog(
-          title = "Warning",
-          paste("The following Standard positions are not empty:", paste(conflicts, collapse = ", ")),
-          footer = tagList(
-            actionButton("keep_scanned", "Keep scanned tubes"),
-            actionButton("keep_standards", "Keep standards"),
-            modalButton("Cancel")
-          )
-        ))
-      }
+      
+      
+      observeEvent(input$keep_scanned, {
+        print("Keeping scanned")
+        # Identify the rows where there is a conflict
+        summary_table_standards(rbind(standard_values[!standard_values$`Tube Position` %in% summary_table$`Tube Position`,
+        ],
+        summary_table))
+        # You can close the modal dialog after the action is taken
+        removeModal()
+      })
+      
+      observeEvent(input$keep_standards, {
+        print("Keeping standards")
+        
+        summary_table_standards(rbind(standard_values,summary_table[-conflicts(),]))
+        
+        # Close the modal dialog
+        removeModal()
+      })
+      
       
       
       ## create layout
-      
-      # Extract the 'Tube Position' column
-      positions <- summary_table$`Tube Position`
-      
-      # Convert the tube positions into rows (letters) and columns (numbers)
-      rows <- sapply(positions, function(pos) substr(pos, 1, 1))
-      columns <- sapply(positions, function(pos) as.numeric(substr(pos, 2, 3)))
-      
-      # Create an empty layout matrix with 8 rows (A-H) and 12 columns (1-12)
-      layout_matrix <- matrix("", nrow = 8, ncol = 12, dimnames = list(LETTERS[1:8], 1:12))
-      
-      # Fill the layout matrix with the combined 'LabID', 'FieldID', and 'Tube ID' values
-      for (i in seq_along(positions)) {
-        row_idx <- match(rows[i], LETTERS[1:8])
-        col_idx <- columns[i]
-        layout_matrix[row_idx, col_idx] <- paste(
-          summary_table$LabID[i],
-          summary_table$FieldID[i],
-          summary_table$`Tube ID`[i],
-          sep = "<br/>"
-        )
-      }
-      
-      # Convert the layout matrix to a data frame for rendering
-      layout_df <- as.data.frame(layout_matrix)
-      
-      # Render the layout as a table
       output$layout_table <- renderDT({
+        new_summary_table = summary_table_standards()
+        # Extract the 'Tube Position' column
+        positions <- new_summary_table$`Tube Position`
+        
+        # Convert the tube positions into rows (letters) and columns (numbers)
+        rows <- sapply(positions, function(pos) substr(pos, 1, 1))
+        columns <- sapply(positions, function(pos) as.numeric(substr(pos, 2, 3)))
+        
+        # Create an empty layout matrix with 8 rows (A-H) and 12 columns (1-12)
+        layout_matrix <- matrix("", nrow = 8, ncol = 12, dimnames = list(LETTERS[1:8], 1:12))
+        
+        # Fill the layout matrix with the combined 'LabID', 'FieldID', and 'Tube ID' values
+        for (i in seq_along(positions)) {
+          row_idx <- match(rows[i], LETTERS[1:8])
+          col_idx <- columns[i]
+          layout_matrix[row_idx, col_idx] <- paste(
+            new_summary_table$LabID[i],
+            new_summary_table$FieldID[i],
+            new_summary_table$`Tube ID`[i],
+            sep = "<br/>"
+          )
+        }
+        
+        # Convert the layout matrix to a data frame for rendering
+        layout_df <- as.data.frame(layout_matrix)
+        
+        # Render the layout as a table
         datatable(layout_df,
                   escape = FALSE, # to allow HTML content in cells
                   options = list(
@@ -211,6 +216,11 @@ qFalidSetupServer <- function(input, output, session) {
       tags$div(class = "alert alert-warning", msg)
     }
   })
+  
+  
+  
+  
+  
   
   
 }
