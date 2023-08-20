@@ -1,6 +1,6 @@
 qFalidSetupServer <- function(input, output, session) {
   
-  
+  summary_table_standards = reactiveVal(NULL)
   
   warning_message <- reactiveVal(NULL) 
   
@@ -103,7 +103,7 @@ qFalidSetupServer <- function(input, output, session) {
         warning_message(NULL) # Reset if no unmatched positions
       }
       
-      summary_table_standards = reactiveVal(summary_table)
+      summary_table_standards(summary_table)
       # Update the value of conflicts based on the uploaded data
       conflict_positions <- which(summary_table$`Tube Position` %in% standard_values$'Tube Position')
       conflicts(conflict_positions)
@@ -210,17 +210,61 @@ qFalidSetupServer <- function(input, output, session) {
   
   
   
-  output$warning_message <- renderUI({
-    msg <- warning_message()
-    if (!is.null(msg)) {
-      tags$div(class = "alert alert-warning", msg)
+  
+  # Assuming that summary_table_standards is a reactiveVal
+  observe({
+    # Check if summary_table_standards is not NULL
+    if (!is.null(summary_table_standards())) {
+      table_output <- summary_table_standards()
+      
+      # Create the required data frame
+      export_data <- data.frame(
+        Row = substr(table_output$`Tube Position`, 1, 1),
+        Column = as.numeric(substr(table_output$`Tube Position`, 2, 3)),
+        `*Target Name` = "varATS",
+        `*Sample Name` = table_output$`Tube ID`,
+        `*Biological Group` = ifelse(
+          table_output$`Tube Position` %in% c("A01","B01","C01","D01","E01","F01","G01","H01","A02","B02","C02","D02","E02","F02","G02","H02","A03","B03","C03"),
+          "Standard",
+          table_output$LabID
+        )
+      )
+      colnames(export_data) <- c("Row", "Column", "*Target Name", "*Sample Name", "*Biological Group")
+      
+      output$qfalid_export_button_ui <- renderUI({
+        # You can check a condition here to determine whether to show the button
+        # For example, you might want to check if new_summary_table() is not NULL
+        if (!is.null(summary_table_standards())) {
+          tags$div(
+            downloadButton("download_file_qPCR", "Download CSV"),
+            style = "text-align: center;"  # CSS to center the content within the div
+          )
+        }
+      })
+      
+      # Setup the download handler
+      output$download_file_qPCR <- downloadHandler(
+        filename = function() {
+          paste("qFALIDSetup_",input$qFalid_name_input,"_",
+                "qFALID",input$qfalid_input,"_",
+                format(Sys.Date(), "%d%b%Y"), ".csv", sep = "")
+        },
+        content = function(file) {
+          
+          write.csv(export_data,file, row.names = FALSE)
+        },
+        contentType = "text/csv"
+      )
     }
   })
   
   
   
   
-  
-  
-  
+  output$warning_message <- renderUI({
+    msg <- warning_message()
+    if (!is.null(msg)) {
+      tags$div(class = "alert alert-warning", msg)
+    }
+  })
 }

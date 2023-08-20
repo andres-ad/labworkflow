@@ -19,7 +19,6 @@ ui <- fluidPage(
     DNAStorageUI(),
     qFalidSetupUI(),
     qFalidResultUI(),
-    qFalidRetrieveResultUI(),
     madhatSetupUI(),
     poolSetupUI(),
     madhatResultsUI()
