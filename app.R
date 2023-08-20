@@ -1,6 +1,7 @@
 libraries <- c("shiny", "shinyjs", "rhandsontable", 
                "DT", "writexl", "tidyverse",
-               "googlesheets4","gargle")
+               "googlesheets4","gargle",
+               "googledrive","shinyalert")
 lapply(libraries, library, character.only = TRUE)
 
 
