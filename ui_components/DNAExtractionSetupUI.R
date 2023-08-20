@@ -1,5 +1,5 @@
 DNAExtractionSetupUI <- function(){
-  tabPanel("DNA Extraction Setup", 
+  tabPanel("MALEX Setup", 
            h4("DNA Extraction Information:"),
            fluidRow(
              column(6, 
