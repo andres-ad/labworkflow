@@ -2,19 +2,16 @@ DNAExtractionSetupUI <- function(){
   tabPanel("MALEX Setup", 
            h4("DNA Extraction Information:"),
            fluidRow(
-             column(6, 
+             column(3, 
                     textInput("dna_extraction_name_input", label = "Name:", 
                               placeholder = "Enter name")),
-             column(6,
+             column(3,
                     textInput("malex_input", label = "MALEX code:", 
-                              placeholder = "Enter number"))
-           ),
-           br(),
-           fluidRow(
-             column(6, 
+                              placeholder = "Enter number")),
+             column(3, 
                     textInput("dna_extraction_country_input", label = "Country(s):", 
                               placeholder = "Enter countries")),
-             column(6,
+             column(3,
                     textInput("dna_extraction_province_input", label = "Province(s):", 
                               placeholder = "Enter provinces"))
            ),
@@ -58,8 +55,7 @@ DNAExtractionSetupUI <- function(){
            ),
            rHandsontableOutput("samples_output",height = "200px"),
            tags$hr(),
-           DTOutput("layout_output"),
-           tags$hr(),
+           uiOutput("layout_output"),
            downloadButton('downloadData', 'Export table'),
            actionButton("reset_malex_setup", "Reset")
   )

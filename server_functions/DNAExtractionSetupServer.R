@@ -276,34 +276,47 @@ DNAExtractionSetupServer <- function(input,output,session){
     }
     
     # Render this table to the output
-    output$layout_output <- DT::renderDT({
-      datatable(layout, 
-                escape = FALSE,  # to allow HTML content in cells
-                options = list(
-                  columnDefs = list(
-                    list(targets = "_all", orderable = FALSE, className = "dt-center"),  # Disable sorting and center content
-                    list(targets = "_all", className = "dt-head-center")  # Center headers
-                  ),
-                  pageLength = -1,  # Display all rows
-                  dom = 't',  # Just the table (no other controls)
-                  autoWidth = TRUE  # Auto adjust column width
-                ),
-                rownames = TRUE
-      ) %>% 
-        formatStyle(columns = 0, 
-                    fontWeight = 'bold',
-                    fontSize = '10px',
-                    padding = '1px 1px'
-        ) %>%  # Make row names bold and set font size to 10
-        formatStyle(columns = 1:ncol(layout), 
-                    borderRight = '1px solid black', 
-                    borderBottom = '1px solid black',
-                    fontSize = '10px',
-                    padding = '1px 1px'  # Set font size to 10 for cell contents
-        )
+    output$layout_output <- renderUI({
+      tagList(
+        DT::renderDT({
+          datatable(
+            layout,
+            extensions = 'Buttons',
+            options = list(
+              dom = 'Bt',  # Only include Buttons and table
+              buttons = list(
+                list(
+                  extend = 'print',
+                  title = paste0("MALEX", input$malex_input, " | Date: ", format(Sys.Date(), "%d%b%Y")),
+                  customize = JS("function(win) { $(win.document.body).find('h1').css('text-align', 'center'); }")
+                )
+              ),
+              columnDefs = list(
+                list(targets = "_all", orderable = FALSE, className = "dt-center"),
+                list(targets = "_all", className = "dt-head-center")
+              ),
+              pageLength = -1,
+              autoWidth = TRUE
+            ),
+            escape = FALSE,
+            rownames = TRUE
+          ) %>%
+            formatStyle(columns = 0,
+                        fontWeight = 'bold',
+                        fontSize = '10px',
+                        padding = '1px 1px'
+            ) %>%
+            formatStyle(columns = 1:ncol(layout),
+                        borderRight = '1px solid black',
+                        borderBottom = '1px solid black',
+                        fontSize = '10px',
+                        padding = '1px 1px'
+            )
+        }),
+        tags$hr()
+      )
     })
   })
-  
   
   
   
@@ -355,6 +368,19 @@ DNAExtractionSetupServer <- function(input,output,session){
       
       # Append the updated_samples_data to the same file without column names since the headers are custom
       write.table(updated_samples_data, file, append = TRUE, row.names = FALSE, col.names = FALSE, sep = ",", quote = TRUE)
+      
+      # add file to drive_folder
+      
+      name = str_remove_all(input$dna_extraction_name_input, " ")
+      malex = str_remove_all(input$malex_input, " ")
+      
+      filename_upload = paste("DNA_ext_setup_", name, "_MALEX", malex, "_", format(Sys.Date(), "%d%b%Y"), ".csv", sep = "")
+      
+      
+      drive_folder <- drive_get(as_id("1muTascwjSUoB6Vip5IoDQoESMKVg-4pj"))
+      drive_upload(file, path = drive_folder, name = filename_upload)
+      
+      
     }
   )
   
