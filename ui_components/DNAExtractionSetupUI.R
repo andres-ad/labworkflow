@@ -32,7 +32,7 @@ DNAExtractionSetupUI <- function(){
                  column(2,class = "print-input-row",conditionalPanel(
                    condition = 'input.study_input_DNAExt == "Other"',
                    textInput("other_study_input_DNAExt",
-                             label = "Content:",
+                             label = "Study:",
                              placeholder = "Enter content"
                    )
                  )
