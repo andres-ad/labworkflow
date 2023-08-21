@@ -22,6 +22,7 @@ ui <- fluidPage(
     qFalidResultUI(),
     madhatSetupUI(),
     poolSetupUI(),
+    superpoolSetupUI(),
     madhatResultsUI()
   )
 )
@@ -32,6 +33,7 @@ server <- function(input, output, session) {
   DNAExtractionSetupServer(input,output,session)
   DNAStorageServer(input,output,session)
   qFalidSetupServer(input,output,session)
+  qFalidResultServer(input,output,session)
 }
 
 shinyApp(ui = ui, server = server)

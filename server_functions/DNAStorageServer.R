@@ -352,7 +352,7 @@ DNAStorageServer <- function(input, output, session) {
   observeEvent(input$update_database_button, {
     ss_url <- "https://docs.google.com/spreadsheets/d/143S5AmwM1OZ-1vbUSNmj8jRUcLQS8LQvDbjvgFauc4s"
     ss <- googlesheets4::gs4_get(ss_url)
-    sheet_data <- googlesheets4::read_sheet(ss)
+    sheet_data <- googlesheets4::read_sheet(ss,"DNAStorage")
     
     # Filter out rows where Study is "Controls"
     filtered_sheet_data <- sheet_data %>% filter(Study != "Controls")%>% 
@@ -424,7 +424,7 @@ DNAStorageServer <- function(input, output, session) {
       # If there are no matching rows, just proceed with the update
       last_row <- nrow(sheet_data) + 2
       target_range <- paste0("A", last_row, ":G", last_row + nrow(data2join))
-      googlesheets4::range_write(ss, data2join, range = target_range, col_names = FALSE)
+      googlesheets4::range_write(ss, data2join, range = target_range, col_names = FALSE,sheet="DNAStorage")
     }
   })
   
