@@ -1,7 +1,7 @@
 DNAExtractionSetupServer <- function(input,output,session){
   
   
-
+  
   
   
   #server for Matching Samples
@@ -259,31 +259,38 @@ DNAExtractionSetupServer <- function(input,output,session){
   observeEvent(input$generate_layout, {
     layoutGenerated(TRUE)
     
-    # Initialize an empty layout with row names A-H and column names 1-12
-    layout <- matrix(NA, nrow=8, ncol=12)
-    rownames(layout) <- LETTERS[1:8]
+    # Initialize an empty layout with 16 rows and column names 1-12
+    layout <- matrix(NA, nrow=16, ncol=12)
+    rownames(layout) <- rep(LETTERS[1:8], each = 2) # Repeat row names A-H
     colnames(layout) <- as.character(1:12)
     
     # Fetch the current dataframe
     df <- samples_data()
     
     # Loop through each row of the dataframe
-    for(i in 1:nrow(df)){
+    for(i in 1:nrow(df)) {
       # Extract row and column info from the Position column (e.g., "E02")
       row_index <- which(LETTERS == substr(df$Position[i], 1, 1))
       col_index <- as.integer(substr(df$Position[i], 2, 3))
       
       # Assign LabID and FieldID to the correct position in the layout matrix
-      combined_info <- paste(df$LabID[i], df$FieldID[i], sep = "<br/>")  # Use <br/> for line break
-      layout[row_index, col_index] <- combined_info
+      layout[row_index * 2 - 1, col_index] <- df$LabID[i]
+      layout[row_index * 2, col_index] <- df$FieldID[i]
     }
     
+    row_labels <- rep(LETTERS[1:8], each = 2)
+    row_labels[seq(2, length(row_labels), by = 2)] <- NA
+    
+    # Bind this to your layout matrix
+    new_layout <- cbind(row_labels, layout)
+    colnames(new_layout) <- c(" ", colnames(layout)) # Set column names
     # Render this table to the output
+
     output$layout_output <- renderUI({
       tagList(
         DT::renderDT({
           datatable(
-            layout,
+            new_layout,
             extensions = 'Buttons',
             options = list(
               dom = 'Bt',  # Only include Buttons and table
@@ -291,7 +298,15 @@ DNAExtractionSetupServer <- function(input,output,session){
                 list(
                   extend = 'print',
                   title = paste0("MALEX", input$malex_input, " | Date: ", format(Sys.Date(), "%d%b%Y")),
-                  customize = JS("function(win) { $(win.document.body).find('h1').css('text-align', 'center'); }")
+                  customize = JS("
+        function(win) { 
+          $(win.document.body).find('h1').css('text-align', 'center'); 
+          $(win.document.body).find('table td').css({'border': '1px solid black', 'text-align': 'center'}); 
+          $(win.document.body).find('table').css('border-collapse', 'collapse');
+          $(win.document.body).find('table table').css({'border': 'none', 'margin': '0', 'padding': '0'}); 
+          $(win.document.body).find('table table td').css({'border': 'none', 'padding': '0'});
+        }"
+                  )
                 )
               ),
               columnDefs = list(
@@ -299,17 +314,23 @@ DNAExtractionSetupServer <- function(input,output,session){
                 list(targets = "_all", className = "dt-head-center")
               ),
               pageLength = -1,
-              autoWidth = TRUE
-            ),
+              autoWidth = TRUE),
             escape = FALSE,
-            rownames = TRUE
+            rownames = FALSE
           ) %>%
             formatStyle(columns = 0,
                         fontWeight = 'bold',
                         fontSize = '10px',
                         padding = '1px 1px'
             ) %>%
-            formatStyle(columns = 1:ncol(layout),
+            formatStyle(columns = 1,
+                        borderRight = '1px solid black',
+                        borderBottom = '1px solid black',
+                        fontSize = '15px',
+                        padding = '1px 1px',
+                        fontWeight = 'bold'
+            )%>%
+            formatStyle(columns = 2:ncol(new_layout),
                         borderRight = '1px solid black',
                         borderBottom = '1px solid black',
                         fontSize = '10px',
