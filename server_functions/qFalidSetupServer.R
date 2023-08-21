@@ -84,7 +84,7 @@ qFalidSetupServer <- function(input, output, session) {
       
       # Read the Google Sheet
       ss_url <- "https://docs.google.com/spreadsheets/d/143S5AmwM1OZ-1vbUSNmj8jRUcLQS8LQvDbjvgFauc4s"
-      sheet_data <- googlesheets4::read_sheet(ss_url)
+      sheet_data <- googlesheets4::read_sheet(ss_url,sheet="DNAStorage")
       
       # Match "Tube ID" from uploaded_data with "GenomicID" from sheet_data
       matched_data <- uploaded_data_filter %>%
