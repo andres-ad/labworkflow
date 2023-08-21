@@ -1,6 +1,6 @@
 qFalidSetupUI <- function(){
-  tabPanel("QFALID Setup",
-           h4("QFALID Information:"),
+  tabPanel("qFALID Setup",
+           h4("qFALID Information:"),
            fluidRow(
              column(6, 
                     textInput("qFalid_name_input", label = "Name:", 
@@ -13,7 +13,7 @@ qFalidSetupUI <- function(){
            h4("Upload Micronic scan"),
            h6("This should be a scan of the Micronic plate containing the tubes in the same positions as they will go into the qPCR plate."),
            fluidRow(
-             column(6, fileInput('qFalid_scan_file', 'Choose QFALID Setup File',
+             column(6, fileInput('qFalid_scan_file', 'Choose File',
                                  accept = c('text/csv', 'text/comma-separated-values,text/plain', '.csv')
              ),
              

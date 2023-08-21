@@ -252,6 +252,16 @@ qFalidSetupServer <- function(input, output, session) {
         content = function(file) {
           
           write.csv(export_data,file, row.names = FALSE)
+          
+    
+          filename_upload = paste("qFALIDSetup_",input$qFalid_name_input,"_",
+                                  "qFALID",input$qfalid_input,"_",
+                                  format(Sys.Date(), "%d%b%Y"), ".csv", sep = "")
+          
+          drive_folder <- drive_get(as_id("1LgL1yaU4YMz-x9brEhg16fYUzvlcospx"))
+          drive_upload(file, path = drive_folder, name = filename_upload)
+          
+          
         },
         contentType = "text/csv"
       )
