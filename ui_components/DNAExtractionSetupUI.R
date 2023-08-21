@@ -19,7 +19,7 @@ DNAExtractionSetupUI <- function(){
            h4("Sample Entry"),
            div(id = "sample_entry_area",
                fluidRow(
-                 column(2,class = "print-input-row",selectInput("study_input", label = "Study:", 
+                 column(2,class = "print-input-row",selectInput("study_input_DNAExt", label = "Study:", 
                                                                 choices = c("GenE8","Controls","Other"),
                                                                 selected = "GenE8")),
                  column(2,class = "print-input-row", textInput("prefix_input", label = "Prefix:", placeholder = "Enter prefix")),
@@ -28,19 +28,20 @@ DNAExtractionSetupUI <- function(){
                  column(2,class = "print-input-row",selectInput("content_input", label = "Content:", 
                                                                 choices = c("DNA(DBS)","DNA(RDT)","Other"),
                                                                 selected = "DNA(DBS)")),
+                 # Inside your fluidRow:
                  column(2,class = "print-input-row",conditionalPanel(
-                   condition = 'input.study_input == "Other"',
-                   textInput("other_study_input", 
-                             label = "Study:",
-                             placeholder = "Enter"
+                   condition = 'input.study_input_DNAExt == "Other"',
+                   textInput("other_study_input_DNAExt",
+                             label = "Content:",
+                             placeholder = "Enter content"
                    )
                  )
-                 ), 
+                 ),
                  column(2,class = "print-input-row",conditionalPanel(
                    condition = 'input.content_input == "Other"',
-                   textInput("other_content_input", 
+                   textInput("other_content_input",
                              label = "Content:",
-                             placeholder = "Enter"
+                             placeholder = "Enter content"
                    )
                  )
                  )

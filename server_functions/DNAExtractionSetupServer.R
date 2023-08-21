@@ -1,5 +1,9 @@
 DNAExtractionSetupServer <- function(input,output,session){
   
+  
+
+  
+  
   #server for Matching Samples
   table_generated <- reactiveVal(FALSE)
   
@@ -11,7 +15,6 @@ DNAExtractionSetupServer <- function(input,output,session){
   numRows <- reactiveVal(0)
   
   observeEvent(input$add_sample_group, {
-    
     # Increment the reactive value
     numRows(numRows() + 1)
     
@@ -23,7 +26,7 @@ DNAExtractionSetupServer <- function(input,output,session){
     newUI <- div(id = rowID, class="row",
                  column(2,
                         tags$label(NULL),
-                        selectInput(paste0("study_input_", newRowID), label = NULL, 
+                        selectInput(paste0("study_input_DNAExt_", newRowID), label = NULL, 
                                     choices = c("GenE8","Controls","Other"),
                                     selected = "GenE8")
                  ),
@@ -54,8 +57,8 @@ DNAExtractionSetupServer <- function(input,output,session){
                  column(2,
                         tags$label(NULL),
                         conditionalPanel(
-                          condition = paste0('input.', "study_input_", newRowID, ' == "Other"'),
-                          textInput(paste0("other_study_input_", newRowID), label = NULL, 
+                          condition = paste0('input.', "study_input_DNAExt_", newRowID, ' == "Other"'),
+                          textInput(paste0("other_study_input_DNAExt_", newRowID), label = NULL, 
                                     placeholder = "Enter study")
                         )
                  ),
@@ -116,10 +119,10 @@ DNAExtractionSetupServer <- function(input,output,session){
     sequences_list <- list()
     
     # First group (always present)
-    if (input$study_input == "Other") {
-      study_code <- input$other_study_input
+    if (input$study_input_DNAExt == "Other") {
+      study_code <- input$other_study_input_DNAExt
     } else {
-      study_code <- input$study_input
+      study_code <- input$study_input_DNAExt
     }
     
     if (input$content_input == "Other") {
@@ -145,9 +148,9 @@ DNAExtractionSetupServer <- function(input,output,session){
         num <- input[[paste0("number_of_samples_input_", i)]]
         # Make sure all fields have valid values before generating sequences
         if(!is.null(prefix) && !is.null(start) && !is.null(num)) {
-          study_code_selected <- input[[paste0("study_input_", i)]]
+          study_code_selected <- input[[paste0("study_input_DNAExt_", i)]]
           if (study_code_selected == "Other") {
-            study_code <- input[[paste0("other_study_input_", i)]]
+            study_code <- input[[paste0("other_study_input_DNAExt_", i)]]
           } else {
             study_code <- study_code_selected
           }
