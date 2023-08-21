@@ -35,6 +35,7 @@ sampleReceivingServer <- function(input,output,session){
       report <- paste(
         "Name:", input$name_input,
         "Date:", format(input$date_input, "%d%b%Y"),
+        "Study:", ifelse(input$study_input == "Other", input$other_study_input, input$study_input),
         "Country:", ifelse(input$country_input == "Other", input$other_country_input, input$country_input),
         "Province(s):", input$province_input,
         "Barcodes:", input$barcode_input,
@@ -42,7 +43,8 @@ sampleReceivingServer <- function(input,output,session){
       )
       report_data(list(report = report, file = file, name = generated_filename))
       
-      report_df = data.frame(Country = ifelse(input$country_input == "Other", input$other_country_input, input$country_input),
+      report_df = data.frame(Study = ifelse(input$study_input == "Other", input$other_study_input, input$study_input),
+                             Country = ifelse(input$country_input == "Other", input$other_country_input, input$country_input),
                              Barcode = strsplit(input$barcode_input,split = "\n")[[1]],
                              Name = input$name_input,
                              Date = format(input$date_input, "%d%b%Y"))
@@ -54,7 +56,7 @@ sampleReceivingServer <- function(input,output,session){
       ss <- googlesheets4::gs4_get(ss_url)
       sheet_data <- googlesheets4::read_sheet(ss,sheet = worksheet_name)
       last_row <- nrow(sheet_data) + 2
-      target_range <- paste0("A", last_row, ":D", last_row + nrow(report_df))
+      target_range <- paste0("A", last_row, ":E", last_row + nrow(report_df))
       
       
       existing_barcodes <- sheet_data$Barcode # Adjust column name as needed
@@ -101,7 +103,7 @@ sampleReceivingServer <- function(input,output,session){
     ss <- googlesheets4::gs4_get(ss_url)
     sheet_data <- googlesheets4::read_sheet(ss,sheet = worksheet_name)
     last_row <- nrow(sheet_data) + 2
-    target_range <- paste0("A", last_row, ":D", last_row + nrow(report_df))
+    target_range <- paste0("A", last_row, ":E", last_row + nrow(report_df))
     
     
     writeLines(data$report, con = data$file)

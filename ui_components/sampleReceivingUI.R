@@ -4,6 +4,13 @@ sampleReceivingUI <- function(){
            br(),
            textInput("name_input", label = "Name:", placeholder = "Enter name"),
            dateInput("date_input", label = "Date:", value = Sys.Date()),
+           selectInput("study_input", label = "Study:", 
+                       choices = c("GenE8", "Other"),
+                       selected = "GenE8"),
+           conditionalPanel(
+             condition = 'input.study_input == "Other"',
+             textInput("other_study_input", label = "Other Study:", placeholder = "Enter study")
+           ),
            selectInput("country_input", label = "Country:", 
                        choices = c("Angola", "Eswatini", "Namibia", "South Africa", "Zambia", "Other"),
                        selected = "Angola"),
