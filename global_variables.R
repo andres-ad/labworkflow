@@ -1,4 +1,10 @@
-study_codes = c("GenE8","BF_SMC","Test")
-country_names = c("Angola", "Burkina Faso", "Eswatini", "Namibia", "South Africa", "Zambia")
+global_study_codes = c("GenE8","BF_SMC","Test")
 
-provinces_SA = c("KZN","MPN","LIM")
+global_provinces_names = list("South Africa" =c("KwaZuluNatal","Mpumalanga","Limpopo"),
+                       "Angola" = "Placeholder",
+                       "Burkina Faso" = "Placeholder",
+                       "Eswatini" = "Placeholder",
+                       "Namibia" = "Placeholder",
+                       "Zambia" = "Placeholder")
+
+global_country_names = names(provinces_names)

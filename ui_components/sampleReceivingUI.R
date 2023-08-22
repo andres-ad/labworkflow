@@ -1,6 +1,7 @@
 sampleReceivingUI <- function(){
   tabPanel("Sample receiving", 
            h4("Sample Receiving"),
+           h2("Please enter 1 province/country at a time"),
            br(),
            fluidRow(
              column(4,
@@ -16,7 +17,7 @@ sampleReceivingUI <- function(){
            fluidRow(
              column(4,
                     selectInput("sample_receiving_study_input", label = "Study*:", 
-                                choices = c(study_codes, "Other"),
+                                choices = c(global_study_codes, "Other"),
                                 selected = "GenE8"),
                     conditionalPanel(
                       condition = 'input.sample_receiving_study_input == "Other"',
@@ -26,9 +27,8 @@ sampleReceivingUI <- function(){
              column(4,
                     
                     selectInput("sample_receiving_country_input", label = "Country*:", 
-                                choices = c(country_names, "Other"),
-                                selected = "South Africa",
-                                multiple=TRUE),
+                                choices = c(global_country_names, "Other"),
+                                selected = "South Africa"),
                     conditionalPanel(
                       # This condition checks if "Other" is in the selected options
                       condition = '$.inArray("Other", input.sample_receiving_country_input) > -1',
@@ -36,13 +36,13 @@ sampleReceivingUI <- function(){
                     )
              ),
              column(4,
-                    textInput("sample_receiving_province_input", label = "Province(s):", placeholder = "Enter province(s)")
+                    uiOutput("sample_receiving_province_ui")
              )
            ),
            
            br(),
            p("Scan all received barcodes here (one barcode per line, lowercase will be processed as uppercase):"),
-           uiOutput("country_textareas"),
+           tags$textarea(id = "sample_receiving_barcode_input", placeholder = "Enter barcodes here", rows = 5, cols = 40),
            br(),
            actionButton("sample_receiving_process_barcodes", "Get a count of scanned barcodes"),
            br(),
