@@ -8,7 +8,7 @@ qFalidSetupServer <- function(input, output, session) {
   standard_values <- data.frame(Position = c("A01","B01","C01","D01","E01","F01","G01","H01",
                                              "A02","B02","C02","D02","E02","F02","G02","H02",
                                              "A03","B03","C03","E12"),
-                                LabID = c("10,000","10,000","10,000","1,000","1,000","1,000","100","100",
+                                LabID = c("10000","10000","10000","1000","1000","1000","100","100",
                                           "100","10","10","10", "1", "1", "1", "0.1",
                                           "0.1", "0.1", "0", "NTC"))
   standard_values$TubeID = standard_values$LabID

@@ -15,7 +15,10 @@ sampleReceivingUI <- function(){
              )
            ),
            fluidRow(
-             column(4,
+             column(3,
+                    numericInput("sample_receiving_REC_input", label = "REC*:", value=global_get_default_rec_value(),min=0)
+                    ),
+             column(3,
                     selectInput("sample_receiving_study_input", label = "Study*:", 
                                 choices = c(global_study_codes, "Other"),
                                 selected = "GenE8"),
@@ -24,18 +27,17 @@ sampleReceivingUI <- function(){
                       textInput("sample_receiving_other_study_input", label = "Other Study:", placeholder = "Enter study")
                     )
              ),
-             column(4,
-                    
+             column(3,
                     selectInput("sample_receiving_country_input", label = "Country*:", 
                                 choices = c(global_country_names, "Other"),
                                 selected = "South Africa"),
                     conditionalPanel(
                       # This condition checks if "Other" is in the selected options
-                      condition = '$.inArray("Other", input.sample_receiving_country_input) > -1',
+                      condition = 'input.sample_receiving_country_input =="Other"',
                       textInput("sample_receiving_other_country_input", label = "Other Country:", placeholder = "Enter country")
                     )
              ),
-             column(4,
+             column(3,
                     uiOutput("sample_receiving_province_ui")
              )
            ),

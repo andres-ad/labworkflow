@@ -1,9 +1,13 @@
 # load needed libraries
+#webshot::install_phantomjs()
 
 libraries <- c("shiny", "shinyjs", "rhandsontable", 
                "DT", "writexl", "tidyverse",
                "googlesheets4","gargle",
-               "googledrive","shinyalert")
+               "googledrive","shinyalert",
+               "webshot","htmlTable","grid",
+               "gridExtra")
+
 lapply(libraries, library, character.only = TRUE)
 
 # source functions for UI and server in their respective folders
@@ -18,6 +22,7 @@ source("global_variables.R")
 
 # Define the UI as a set of tabs
 ui <- fluidPage(
+  actionButton("auth", "Authenticate with Google Sheets"),
   tags$style(HTML("
     /* Adjust hr height and margin */
     hr {
@@ -27,18 +32,23 @@ ui <- fluidPage(
       background-color: #ccc; /* Adjust color as needed */
     }
   ")),
+  tags$script("
+  function resetFileInput(elementId) {
+    $('#'+elementId).val('');
+  }
+"),
   titlePanel("ARMMOR Lab Workflow"),
   useShinyjs(),
   tabsetPanel(
     sampleReceivingUI(),
     DNAExtractionSetupUI(),
     DNAStorageUI(),
-    qFalidSetupUI(),
-    qFalidResultUI(),
-    madhatSetupUI(),
-    poolSetupUI(),
-    superpoolSetupUI(),
-    madhatResultsUI()
+    qFalidSetupUI()#,
+    #qFalidResultUI(),
+    #madhatSetupUI(),
+    #poolSetupUI(),
+    #superpoolSetupUI(),
+    #madhatResultsUI()
   )
 )
 

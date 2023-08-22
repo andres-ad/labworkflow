@@ -26,6 +26,20 @@ sampleReceivingServer <- function(input,output,session){
     toupper(input$sample_receiving_barcode_input)
   })
   
+  observe({
+    barcodes <- input_barcodes()
+    if (!is.null(barcodes)) {
+      duplicates <- duplicated(unlist(strsplit(input_barcodes(), "\n")))
+      if (any(duplicates)) {
+        shinyalert::shinyalert(
+          title = "Warning!",
+          text = "Some barcodes are repeated. Please ensure each barcode is unique.",
+          type = "warning"
+        )
+      }
+    }
+  })
+  
   # Upon clicking on "Get a count of scanned barcodes" display count
   observeEvent(input$sample_receiving_process_barcodes, {
     if (!is.null(input_barcodes())) {
@@ -52,8 +66,18 @@ sampleReceivingServer <- function(input,output,session){
                            gsub("[^A-Za-z0-9]", "", input$sample_receiving_surname_input))
     date_cleaned <- gsub("[^A-Za-z0-9]", "", format(input$sample_receiving_date_input, "%Y%m%d"))
     time_cleaned <- gsub("[^0-9]", "", format(Sys.time(), "%H%M"))
-    generated_filename <- paste0("receiving_", name_cleaned, "_", date_cleaned, "_", time_cleaned, ".txt")
+    country <- get_input_or_other(input$sample_receiving_country_input, input$sample_receiving_other_country_input)
+    province <- get_input_or_other(input$sample_receiving_province_input, input$sample_receiving_other_province_input)
+    country_cleaned = gsub("[^A-Za-z0-9]", "",country)
+    province_cleaned = gsub("[^A-Za-z0-9]", "",province)
+    rec_cleaned = paste0("REC",input$sample_receiving_REC_input)
+    
+    generated_filename <- paste0("receiving_", name_cleaned, "_",country_cleaned,"_",province_cleaned,"_",rec_cleaned,"_", date_cleaned, "_", time_cleaned, ".txt")
     return(generated_filename)
+  }
+  
+  get_input_or_other <- function(input_val, other_input_val) {
+    ifelse(input_val == "Other", other_input_val, input_val)
   }
   
   
@@ -62,12 +86,9 @@ sampleReceivingServer <- function(input,output,session){
     filename = sample_receiving_generate_filename,
     content = function(file) {
       # If Other, get other function
-      get_input_or_other <- function(input_val, other_input_val) {
-        ifelse(input_val == "Other", other_input_val, input_val)
-      }
-      
+    
       # extract inputs
-      
+      rec = paste0("REC",input$sample_receiving_REC_input)
       study <- get_input_or_other(input$sample_receiving_study_input, input$sample_receiving_other_study_input)
       country <- get_input_or_other(input$sample_receiving_country_input, input$sample_receiving_other_country_input)
       province <- get_input_or_other(input$sample_receiving_province_input, input$sample_receiving_other_province_input)
@@ -75,6 +96,7 @@ sampleReceivingServer <- function(input,output,session){
       datereport <- format(input$sample_receiving_date_input, "%d%b%Y")
       
       report <- paste(
+        "REC:", rec,
         "Name:", name,
         "Date:", datereport,
         "Study:", study,
@@ -85,7 +107,7 @@ sampleReceivingServer <- function(input,output,session){
       )
       report_data(list(report = report, file = file, name = sample_receiving_generate_filename()))
       
-      report_df <- data.frame(Study = study, Country = country, Province = province, Barcode = unlist(strsplit(input_barcodes(), "\n")), Name = name, Date = datereport)
+      report_df <- data.frame(REC = rec, Study = study, Country = country, Province = province, Barcode = unlist(strsplit(input_barcodes(), "\n")), Name = name, Date = datereport)
       
       
       # Append to the Google sheet: 
@@ -136,7 +158,7 @@ sampleReceivingServer <- function(input,output,session){
     
     sheet_data <- googlesheets4::read_sheet(ss,sheet = worksheet_name)
     last_row <- nrow(sheet_data) + 2
-    target_range <- paste0("A", last_row, ":F", last_row + nrow(report_df))
+    target_range <- paste0("A", last_row, ":G", last_row + nrow(report_df))
     
     writeLines(data$report, con = data$file)
     drive_folder <- drive_get(as_id("1WnrshcBiA_ZOeNGCjOI4RSZSpbKDZHNP"))
