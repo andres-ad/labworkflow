@@ -1,9 +1,6 @@
 DNAExtractionSetupServer <- function(input,output,session){
   
   
-  
-  
-  
   #server for Matching Samples
   table_generated <- reactiveVal(FALSE)
   
@@ -14,6 +11,9 @@ DNAExtractionSetupServer <- function(input,output,session){
   
   numRows <- reactiveVal(0)
   
+  
+  
+  
   observeEvent(input$add_sample_group, {
     # Increment the reactive value
     numRows(numRows() + 1)
@@ -23,56 +23,45 @@ DNAExtractionSetupServer <- function(input,output,session){
     # Create unique IDs for the new inputs
     rowID <- paste0("sample_row_", newRowID)
     
-    newUI <- div(id = rowID, class="row",
-                 column(2,
-                        tags$label(NULL),
-                        selectInput(paste0("study_input_DNAExt_", newRowID), label = NULL, 
-                                    choices = c("GenE8","Controls","Other"),
-                                    selected = "GenE8")
-                 ),
+    newUI <- div(id = rowID, #class="row",
                  
-                 column(2, 
-                        tags$label(NULL),
-                        textInput(paste0("prefix_input_", newRowID), label = NULL, 
-                                  placeholder = "Enter prefix")
+                 fluidRow(
+                   p(paste("Sample Group ",newRowID+1)),
+                   column(3,tags$label(NULL),
+                          selectInput(paste0("study_input_DNAExt_", newRowID), label = "Study:", 
+                                      choices = c(global_study_codes,"Other"),
+                                      selected = "GenE8"),
+                          selectInput(paste0("content_input_", newRowID), label = "Content", 
+                                      choices = c("DNA(DBS)","DNA(RDT)","Other"),
+                                      selected = "DNA(DBS)")),
+                   column(2,tags$label(NULL),
+                          conditionalPanel(
+                            condition = paste0('input.study_input_DNAExt_', newRowID, ' == "Other"'),
+                            textInput(paste0("other_study_input_DNAExt", newRowID), label = "Other Study", 
+                                      placeholder = "Enter Study"
+                            )
+                          ),
+                          conditionalPanel(
+                            condition = paste0('input.', "content_input_", newRowID, ' == "Other"'),
+                            textInput(paste0("other_content_input", newRowID), label = "Other Content:", 
+                                      placeholder = "Enter Content"
+                            )
+                          )),
+                   column(3,tags$label(NULL),
+                          textInput(paste0("prefix_input", newRowID), label = "LabID Prefix:",  
+                                    placeholder = "Enter prefix"),
+                          numericInput("starting_number_input", 
+                                       label = "Start LabID#:", 
+                                       value = 0, 
+                                       min = 0)),
+                   column(3,tags$label(NULL),
+                          numericInput(paste0("number_of_samples_input", newRowID), label = "# Samples", 
+                                       value = 0, 
+                                       min = 0),
+                          fileInput('received_barcodes','Barcodes file if available'))
                  ),
-                 column(2,
-                        tags$label(NULL),
-                        numericInput(paste0("starting_number_input_", newRowID), label = NULL, 
-                                     value = 0, min = 0)
-                 ),
-                 column(2,
-                        tags$label(NULL),
-                        numericInput(paste0("number_of_samples_input_", newRowID), label = NULL, 
-                                     value = 1, min = 1)
-                 ),
-                 
-                 column(2,
-                        tags$label(NULL),
-                        selectInput(paste0("content_input_", newRowID), label = NULL, 
-                                    choices = c("DNA(DBS)","DNA(RDT)","Other"),
-                                    selected = "DNA(DBS)")
-                 ),
-                 
-                 column(2,
-                        tags$label(NULL),
-                        conditionalPanel(
-                          condition = paste0('input.', "study_input_DNAExt_", newRowID, ' == "Other"'),
-                          textInput(paste0("other_study_input_DNAExt_", newRowID), label = NULL, 
-                                    placeholder = "Enter study")
-                        )
-                 ),
-                 
-                 column(2,
-                        tags$label(NULL),
-                        conditionalPanel(
-                          condition = paste0('input.', "content_input_", newRowID, ' == "Other"'),
-                          textInput(paste0("other_content_input_", newRowID), label = NULL, 
-                                    placeholder = "Enter content")
-                        )
-                 )
+                 tags$hr()
     )
-    
     
     
     
@@ -305,7 +294,7 @@ DNAExtractionSetupServer <- function(input,output,session){
     new_layout <- cbind(row_labels, layout)
     colnames(new_layout) <- c(" ", colnames(layout)) # Set column names
     # Render this table to the output
-
+    
     output$layout_output <- renderUI({
       tagList(
         DT::renderDT({

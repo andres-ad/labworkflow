@@ -3,7 +3,7 @@ sampleReceivingServer <- function(input,output,session){
   
   
   output$sample_receiving_province_ui <- renderUI({
-      province_input <- selectInput("sample_receiving_province_input", label = "Province(s):",
+      province_input <- selectInput("sample_receiving_province_input", label = "Province:",
                                     choices = c(global_provinces_names[[input$sample_receiving_country_input]],
                                                 "Other"))
       

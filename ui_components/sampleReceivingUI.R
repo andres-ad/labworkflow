@@ -1,7 +1,7 @@
 sampleReceivingUI <- function(){
   tabPanel("Sample receiving", 
            h4("Sample Receiving"),
-           h2("Please enter 1 province/country at a time"),
+           h4("Please enter one province/country at a time"),
            br(),
            fluidRow(
              column(4,
@@ -41,7 +41,8 @@ sampleReceivingUI <- function(){
            ),
            
            br(),
-           p("Scan all received barcodes here (one barcode per line, lowercase will be processed as uppercase):"),
+           p("Scan or manually enter all received barcodes here (one barcode per line, lowercase will be processed as uppercase)"),
+           p("If you don't want to scan or enter these during DNA extraction, scan only a batch of samples that you will extract together"),
            tags$textarea(id = "sample_receiving_barcode_input", placeholder = "Enter barcodes here", rows = 5, cols = 40),
            br(),
            actionButton("sample_receiving_process_barcodes", "Get a count of scanned barcodes"),

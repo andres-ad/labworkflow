@@ -18,6 +18,15 @@ source("global_variables.R")
 
 # Define the UI as a set of tabs
 ui <- fluidPage(
+  tags$style(HTML("
+    /* Adjust hr height and margin */
+    hr {
+      height: 1px; /* Adjust height as needed */
+      margin: 5px 0; /* Adjust margin as needed */
+      border: none;
+      background-color: #ccc; /* Adjust color as needed */
+    }
+  ")),
   titlePanel("ARMMOR Lab Workflow"),
   useShinyjs(),
   tabsetPanel(
