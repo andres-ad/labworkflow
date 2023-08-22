@@ -54,6 +54,8 @@ DNAExtractionSetupUI <- function(){
                actionButton("submit_samples", "Generate table"),
                uiOutput("generate_layout_button")
            ),
+           fileInput('received_barcodes', 'I have my barcodes already! (upload before you click Generate table)',  
+                     accept = c('text', '.txt')),
            rHandsontableOutput("samples_output",height = "200px"),
            tags$hr(),
            uiOutput("layout_output"),

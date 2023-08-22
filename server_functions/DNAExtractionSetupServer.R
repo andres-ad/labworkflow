@@ -103,6 +103,7 @@ DNAExtractionSetupServer <- function(input,output,session){
   })
   
   # Function to generate a sequence for a given group
+  
   generate_samples_seq <- function(prefix, start, num) {
     # If starting number is 0, just return the prefix
     if (start == 0) {
@@ -113,6 +114,25 @@ DNAExtractionSetupServer <- function(input,output,session){
     end <- start + num - 1
     sapply(seq(start, end), function(x) paste0(prefix, sprintf("%03d", x)))
   }
+  
+  
+  barcodes_reactive_txt = reactiveVal("")
+  
+  
+  observeEvent(input$received_barcodes, {
+    req(input$received_barcodes) # Ensure that a file is uploaded
+    
+    # Read the uploaded file
+    uploaded_file <- input$received_barcodes$datapath
+    lines <- readLines(uploaded_file)
+    
+    # Find the index of the line containing "Barcodes:" and take all the lines after it
+    barcodes_line <- grep("Barcodes:", lines)
+    barcodes <- lines[(barcodes_line + 1):length(lines)]
+    
+    # Update the FieldID column
+    barcodes_reactive_txt( barcodes)
+  })
   
   submit_samples_process <- function(){
     # List to store each group's sequence
@@ -206,7 +226,8 @@ DNAExtractionSetupServer <- function(input,output,session){
     samples_df$Well <- wells
     samples_df$Column <- columns
     samples_df$Position <- paste0(samples_df$Well,samples_df$Column)
-    samples_df$FieldID <- ""
+    samples_df$FieldID <- barcodes_reactive_txt()
+    
     # Reorder the columns
     samples_df <- samples_df[, c('Position','Study_Code','Specimen_Type','LabID', 'FieldID')]
     
@@ -266,7 +287,6 @@ DNAExtractionSetupServer <- function(input,output,session){
     
     # Fetch the current dataframe
     df <- samples_data()
-    
     # Loop through each row of the dataframe
     for(i in 1:nrow(df)) {
       # Extract row and column info from the Position column (e.g., "E02")
@@ -368,7 +388,7 @@ DNAExtractionSetupServer <- function(input,output,session){
       name = str_remove_all(input$dna_extraction_name_input, " ")
       malex = str_remove_all(input$malex_input, " ")
       
-      paste("DNA_ext_setup_", name, "_MALEX", malex, "_", format(Sys.Date(), "%d%b%Y"), ".csv", sep = "")
+      paste("MALEXSetup_", name, "_MALEX", malex, "_", format(Sys.Date(), "%d%b%Y"), ".csv", sep = "")
     },
     
     content = function(file) {
@@ -398,7 +418,7 @@ DNAExtractionSetupServer <- function(input,output,session){
       name = str_remove_all(input$dna_extraction_name_input, " ")
       malex = str_remove_all(input$malex_input, " ")
       
-      filename_upload = paste("DNA_ext_setup_", name, "_MALEX", malex, "_", format(Sys.Date(), "%d%b%Y"), ".csv", sep = "")
+      filename_upload = paste("MALEXSetup_", name, "_MALEX", malex, "_", format(Sys.Date(), "%d%b%Y"), ".csv", sep = "")
       
       
       drive_folder <- drive_get(as_id("1muTascwjSUoB6Vip5IoDQoESMKVg-4pj"))

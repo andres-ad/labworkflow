@@ -7,4 +7,4 @@ global_provinces_names = list("South Africa" =c("KwaZuluNatal","Mpumalanga","Lim
                        "Namibia" = "Placeholder",
                        "Zambia" = "Placeholder")
 
-global_country_names = names(provinces_names)
+global_country_names = names(global_provinces_names)
