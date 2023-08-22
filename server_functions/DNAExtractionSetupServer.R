@@ -203,7 +203,7 @@ DNAExtractionSetupServer <- function(input,output,session){
     samples_df <- samples_df[, c('Position','Study_Code','Specimen_Type','LabID', 'FieldID')]
     
     
-    repeated_lab_ids <- samples_df$LabID[duplicated(samples_df$LabID)]
+    repeated_lab_ids <- samples_df$LabID[duplicated(samples_df$LabID)& samples_df$LabID != ""]
     repeated_field_ids <- samples_df$FieldID[duplicated(samples_df$FieldID) & samples_df$FieldID != ""]
     
     
