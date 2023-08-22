@@ -205,11 +205,11 @@ DNAStorageServer <- function(input, output, session) {
                Shelf,Basket,
                PlateBarcode,LabID) %>% 
         filter(TubeID!="No Code" | FieldID !="NA" | LabID!="NA" )
-      colnames(joined_data_output$joinedData) = c("Position","Tube ID","Study Code",
-                                                  "Study Subject","Specimen Type",
-                                                  "Plate Name","Freezer Name",
-                                                  "Shelf Name","Basket Name",
-                                                  "Plate Barcode","Comment")
+      colnames(joined_data_output$joinedData) = c("Position","Tube ID","StudyCode",
+                                                  "StudySubject","SpecimenType",
+                                                  "PlateName","FreezerName",
+                                                  "ShelfName","BasketName",
+                                                  "PlateBarcode","Comment")
       
     }
   })
@@ -233,11 +233,11 @@ DNAStorageServer <- function(input, output, session) {
                                     str_remove_all(sapply(strsplit(input$file_upload_built_file$name,"_"),tail,1),".csv"),
                                     "Placeholder"))
         )%>% 
-        select('Study Code','Study Subject','Comment','Tube ID','User','MALEX','Date')
+        select('StudyCode','StudySubject','Comment','Tube ID','User','MALEX','Date')
       colnames(joinedDataDB) = c("Study","FieldID","LabID","GenomicID","User","MALEX","Date")
       joinedDataDB_react(joinedDataDB)
       joined_df <- joined_data_output$joinedData %>% 
-        select(Position,Comment,'Study Subject','Tube ID')
+        select(Position,Comment,'StudySubject','Tube ID')
       colnames(joined_df) <- c("Position","LabID","FieldID","TubeID")
       
       # Initialize an empty layout with row names A-H and column names 1-12

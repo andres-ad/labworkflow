@@ -163,7 +163,7 @@ qFalidResultServer <- function(input, output, session) {
         names_from = FieldRepeat) %>% 
       left_join(data_av,by=c("GenomicID","LabID","FieldID"))
       
-    sheet_data = sheet_data[,c(1:3,ncol(sheet_data),4:ncol(sheet_data))]
+    sheet_data = sheet_data[,c(1:3,ncol(sheet_data),4:ncol(sheet_data)-1)]
     
     googlesheets4::sheet_write(sheet_data,ss,sheet = "qFALIDResultsWide")
     

@@ -6,8 +6,8 @@ qFalidSetupUI <- function(){
                     textInput("qFalid_name_input", label = "Name:", 
                               placeholder = "Enter name")),
              column(6,
-                    textInput("qfalid_input", label = "qFALID code:", 
-                              placeholder = "Enter number"))
+                    numericInput("qfalid_input", label = "qFALID code:", 
+                              value = 0,min=0))
            ),
            br(),
            h4("Upload Micronic scan"),
