@@ -1,10 +1,10 @@
 DNAStorageUI <- function(){
   tabPanel("DNA Storage", 
            fluidRow(
-             column(9, h4("Upload DNA extraction file")),
-             column(3, 
-                    actionButton("joined_file_button","I have the joined file!")
-             )
+             column(9, h4("Upload DNA extraction file"))#,
+             # column(3, 
+             #        actionButton("joined_file_button","I have the joined file!")
+             # )
            ),
            h6("This is the CSV file created in DNA extraction Setup tab that links LabID to FieldID"),
            fluidRow(

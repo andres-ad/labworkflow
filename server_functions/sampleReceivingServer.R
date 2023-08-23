@@ -3,16 +3,16 @@ sampleReceivingServer <- function(input,output,session){
   
   
   output$sample_receiving_province_ui <- renderUI({
-      province_input <- selectInput("sample_receiving_province_input", label = "Province:",
-                                    choices = c(global_provinces_names[[input$sample_receiving_country_input]],
-                                                "Other"))
-      
-      other_province_input <- conditionalPanel(
-        condition = 'input.sample_receiving_province_input == "Other"',
-        textInput("sample_receiving_other_province_input", label = "Other Province:", placeholder = "Enter province")
-      )
-      
-      tagList(province_input, other_province_input)
+    province_input <- selectInput("sample_receiving_province_input", label = "Province:",
+                                  choices = c(global_provinces_names[[input$sample_receiving_country_input]],
+                                              "Other"))
+    
+    other_province_input <- conditionalPanel(
+      condition = 'input.sample_receiving_province_input == "Other"',
+      textInput("sample_receiving_other_province_input", label = "Other Province:", placeholder = "Enter province")
+    )
+    
+    tagList(province_input, other_province_input)
   })
   
   
@@ -27,18 +27,20 @@ sampleReceivingServer <- function(input,output,session){
   })
   
   observe({
-    barcodes <- input_barcodes()
+    barcodes <- input$sample_receiving_barcode_input
     if (!is.null(barcodes)) {
-      duplicates <- duplicated(unlist(strsplit(input_barcodes(), "\n")))
-      if (any(duplicates)) {
+      barcodes <- unlist(strsplit(barcodes, "\n"))
+      duplicates <- barcodes[duplicated(barcodes)]
+      if (length(duplicates) > 0) {
         shinyalert::shinyalert(
           title = "Warning!",
-          text = "Some barcodes are repeated. Please ensure each barcode is unique.",
+          text = paste("These barcodes are repeated:", paste(unique(duplicates), collapse = ", "), ". Please ensure each barcode is unique."),
           type = "warning"
         )
       }
     }
   })
+  
   
   # Upon clicking on "Get a count of scanned barcodes" display count
   observeEvent(input$sample_receiving_process_barcodes, {
@@ -88,7 +90,7 @@ sampleReceivingServer <- function(input,output,session){
       
       
       # If Other, get other function
-    
+      
       # extract inputs
       rec = paste0("REV",input$sample_receiving_REV_input)
       study <- get_input_or_other(input$sample_receiving_study_input, input$sample_receiving_other_study_input)

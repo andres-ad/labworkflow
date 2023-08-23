@@ -222,7 +222,7 @@ DNAStorageServer <- function(input, output, session) {
                PlateName,Freezer,
                Shelf,Basket,
                PlateBarcode,LabID) %>% 
-        filter(TubeID!="No Code" | FieldID !="NA" | LabID!="NA" )
+        filter(TubeID!="No Code" & FieldID !="NA" & LabID!="NA" )
       colnames(joined_data_output$joinedData) = c("Position","Tube ID","StudyCode",
                                                   "StudySubject","SpecimenType",
                                                   "PlateName","FreezerName",
