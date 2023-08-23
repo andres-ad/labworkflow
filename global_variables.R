@@ -38,7 +38,7 @@ global_get_default_rec_value <- function() {
         gs4_get("https://docs.google.com/spreadsheets/d/143S5AmwM1OZ-1vbUSNmj8jRUcLQS8LQvDbjvgFauc4s"),
         sheet = "Receiving")
       
-      1 + suppressWarnings(max(as.numeric(gsub("REC", "", DNAStorage_sheet_data$REC)), na.rm = TRUE))
+      1 + suppressWarnings(max(as.numeric(gsub("REV", "", DNAStorage_sheet_data$REV)), na.rm = TRUE))
     },
     error = function(e) {
       warning("Could not connect to the Internet")

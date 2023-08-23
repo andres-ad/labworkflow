@@ -16,7 +16,7 @@ sampleReceivingUI <- function(){
            ),
            fluidRow(
              column(3,
-                    numericInput("sample_receiving_REC_input", label = "REC*:", value=global_get_default_rec_value(),min=0)
+                    numericInput("sample_receiving_REV_input", label = "REV*:", value=global_get_default_rec_value(),min=0)
                     ),
              column(3,
                     selectInput("sample_receiving_study_input", label = "Study*:", 

@@ -70,7 +70,7 @@ sampleReceivingServer <- function(input,output,session){
     province <- get_input_or_other(input$sample_receiving_province_input, input$sample_receiving_other_province_input)
     country_cleaned = gsub("[^A-Za-z0-9]", "",country)
     province_cleaned = gsub("[^A-Za-z0-9]", "",province)
-    rec_cleaned = paste0("REC",input$sample_receiving_REC_input)
+    rec_cleaned = paste0("REV",input$sample_receiving_REV_input)
     
     generated_filename <- paste0("receiving_", name_cleaned, "_",country_cleaned,"_",province_cleaned,"_",rec_cleaned,"_", date_cleaned, "_", time_cleaned, ".txt")
     return(generated_filename)
@@ -90,7 +90,7 @@ sampleReceivingServer <- function(input,output,session){
       # If Other, get other function
     
       # extract inputs
-      rec = paste0("REC",input$sample_receiving_REC_input)
+      rec = paste0("REV",input$sample_receiving_REV_input)
       study <- get_input_or_other(input$sample_receiving_study_input, input$sample_receiving_other_study_input)
       country <- get_input_or_other(input$sample_receiving_country_input, input$sample_receiving_other_country_input)
       province <- get_input_or_other(input$sample_receiving_province_input, input$sample_receiving_other_province_input)
@@ -98,7 +98,7 @@ sampleReceivingServer <- function(input,output,session){
       datereport <- format(input$sample_receiving_date_input, "%d%b%Y")
       
       report <- paste(
-        "REC:", rec,
+        "REV:", rec,
         "Name:", name,
         "Date:", datereport,
         "Study:", study,
@@ -109,7 +109,7 @@ sampleReceivingServer <- function(input,output,session){
       )
       report_data(list(report = report, file = file, name = sample_receiving_generate_filename()))
       
-      report_df <- data.frame(REC = rec, Study = study, Country = country, Province = province, FieldID = unlist(strsplit(input_barcodes(), "\n")), Name = name, Date = datereport)
+      report_df <- data.frame(REV = rec, Study = study, Country = country, Province = province, FieldID = unlist(strsplit(input_barcodes(), "\n")), Name = name, Date = datereport)
       
       
       # Append to the Google sheet: 
