@@ -103,6 +103,24 @@ DNAStorageServer <- function(input, output, session) {
     return(data)
   })
   
+  observe({
+    inFile <- input$file2
+    if (!is.null(inFile)) {
+      
+      file2name <- inFile$name
+      
+      # Get the path to the uploaded file
+      filePath <- inFile$datapath
+      
+      # Define the Google Drive folder where you want to upload the file
+    
+      drive_folder <- drive_get(as_id("1QwHB7ZUpWyNimYXWIUJ8MGUWHJIQ8zBa"))
+      
+      # Upload the file to Google Drive
+      drive_upload(filePath, path = drive_folder, name = file2name)
+    }
+  })
+  
   output$micronicDetailsDisplay <- renderUI({
     data <- micronic_data()
     if (is.null(data) || nrow(data) < 1) {
@@ -234,7 +252,7 @@ DNAStorageServer <- function(input, output, session) {
                                     "Placeholder"))
         )%>% 
         select('StudyCode','StudySubject','Comment','Tube ID','User','MALEX','Date')
-      colnames(joinedDataDB) = c("Study","FieldID","LabID","GenomicID","User","MALEX","Date")
+      colnames(joinedDataDB) = c("Study","FieldID","LabID","MicronicID","User","MALEX","Date")
       joinedDataDB_react(joinedDataDB)
       joined_df <- joined_data_output$joinedData %>% 
         select(Position,Comment,'StudySubject','Tube ID')
@@ -364,7 +382,7 @@ DNAStorageServer <- function(input, output, session) {
     
     # Find matching rows
     matching_rows <- data2join %>% 
-      semi_join(filtered_sheet_data, by = c("FieldID", "LabID", "GenomicID"))
+      semi_join(filtered_sheet_data, by = c("FieldID", "LabID", "MicronicID"))
     
     # If there are matching rows, display a warning
     if (nrow(matching_rows) > 0) {
@@ -372,11 +390,11 @@ DNAStorageServer <- function(input, output, session) {
       # Extract the duplicate IDs
       dup_field_ids <- unique(matching_rows$FieldID)
       dup_lab_ids <- unique(matching_rows$LabID)
-      dup_genomic_ids <- unique(matching_rows$GenomicID)
+      dup_Micronic_ids <- unique(matching_rows$MicronicID)
       
-      # Extract rows of FieldID, LabID, GenomicID for the duplicate entries
+      # Extract rows of FieldID, LabID, MicronicID for the duplicate entries
       dup_rows <- matching_rows %>%
-        select(FieldID, LabID, GenomicID)
+        select(FieldID, LabID, MicronicID)
       
       # Convert the data frame to groups of three values
       rows_as_text <- lapply(1:nrow(dup_rows), function(i) {
@@ -389,7 +407,7 @@ DNAStorageServer <- function(input, output, session) {
         tags$br(), # Line break
         "You must select Cancel or Proceed at the bottom of this window",
         tags$br(), # Line break
-        "(Field ID, Lab ID, Genomic ID)",
+        "(Field ID, Lab ID, Micronic ID)",
         tags$br(),
         do.call(tagList, lapply(rows_as_text, function(item) {
           list(tags$span(item), tags$br())
@@ -414,6 +432,7 @@ DNAStorageServer <- function(input, output, session) {
         last_row <- nrow(sheet_data) + 2
         target_range <- paste0("A", last_row, ":G", last_row + nrow(data2join))
         googlesheets4::range_write(ss, data2join, range = target_range, col_names = FALSE)
+        shinyalert::shinyalert(title = "Success!", text = "Upload successful", type = "success")
       })
       
       observeEvent(input$cancel_update, {
@@ -425,6 +444,8 @@ DNAStorageServer <- function(input, output, session) {
       last_row <- nrow(sheet_data) + 2
       target_range <- paste0("A", last_row, ":G", last_row + nrow(data2join))
       googlesheets4::range_write(ss, data2join, range = target_range, col_names = FALSE,sheet="DNAStorage")
+      
+      shinyalert::shinyalert(title = "Success!", text = "Upload successful", type = "success")
     }
   })
   

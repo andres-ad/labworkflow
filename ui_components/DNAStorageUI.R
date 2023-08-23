@@ -26,7 +26,7 @@ DNAStorageUI <- function(){
                                 choices = c("Active Samples", "Archived Samples"),
                                 selected = "Active Samples")),
              column(2, 
-                    selectInput("dna_extraction_shelf_input", label = "Shelf:", choices = 1:4)),
+                    selectInput("dna_extraction_shelf_input", label = "Shelf:", choices = 1:5)),
              column(2,
                     selectInput("dna_extraction_basket_input", label = "Basket:", choices = 1:2))
            ),

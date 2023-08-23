@@ -240,6 +240,8 @@ DNAExtractionSetupServer <- function(input,output,session){
     # For non-matching rows, FieldID is already empty
     
     # Update the reactive value with the new data
+    samples_df$FieldID = toupper(samples_df$FieldID )
+      samples_df$LabID = toupper(samples_df$LabID )
     samples_data(samples_df)
     
     if (length(warnings) > 0) {
@@ -254,7 +256,7 @@ DNAExtractionSetupServer <- function(input,output,session){
     output$samples_output <- renderRHandsontable({
       df <- samples_data() %>% 
         filter(Specimen_Type!="Empty")
-        
+      
       if (!is.null(df)) {
         rhandsontable(df, rowHeaders = FALSE)
       }
@@ -363,7 +365,7 @@ DNAExtractionSetupServer <- function(input,output,session){
     
   })
   
-
+  
   
   # Replace the HTML line breaks with actual newline characters
   
@@ -421,13 +423,39 @@ DNAExtractionSetupServer <- function(input,output,session){
   
   
   
+  canDownload = reactiveVal(FALSE)
+  
+  observeEvent(input$generate_layout,{
+    
+    ss_url <- "https://docs.google.com/spreadsheets/d/143S5AmwM1OZ-1vbUSNmj8jRUcLQS8LQvDbjvgFauc4s"
+    sheet_data <- googlesheets4::read_sheet(ss_url,sheet="Receiving") %>% 
+      mutate_all(as.character)
+    
+    
+    # Update empty FieldID to be the same as LabID
+    updated_samples_data <- samples_data()%>% 
+      filter(Specimen_Type!="Empty")
+    
+    missing_field_ids <- setdiff(updated_samples_data$FieldID, sheet_data$FieldID)
+    
+    
+    if (length(missing_field_ids) != 0) {
+      # If the condition is not met, show a warning and prevent the download
+      shinyalert::shinyalert("Warning", "Field IDs not found. Please quickly receive samples before proceeding.", type = "warning")
+      canDownload(FALSE)
+    } else {
+      canDownload(TRUE)
+    }
+    
+  })
+  
   
   output$downloadData <- downloadHandler(
     
     filename = function() {
       # Extract the user input values
       name <- paste0(input$malex_name_input, input$malex_surname_input)
-
+      
       malex <- input$malex_id_input
       # Remove any spaces from these values
       name <- gsub(" ", "", name)
@@ -436,46 +464,52 @@ DNAExtractionSetupServer <- function(input,output,session){
       paste("MALEXSetup_", name, "_MALEX", malex, "_", format(Sys.Date(), "%d%b%Y"), ".csv", sep = "")
     },
     
+    
+    
     content = function(file) {
-      # Update empty FieldID to be the same as LabID
-      updated_samples_data <- samples_data()%>% 
-        filter(Specimen_Type!="Empty")
-
-      empty_field_ids <- updated_samples_data$FieldID == ""
-      updated_samples_data$FieldID[empty_field_ids] <- updated_samples_data$LabID[empty_field_ids]
       
-      # Write custom header rows
-      header_info <- c(
-        paste("Name:", input$dna_extraction_name_input),
-        paste("MALEX:", input$malex_input),
-        paste("Date:", format(Sys.Date(), "%d%b%Y")),
-        "",
-        paste(colnames(updated_samples_data), collapse = ",")
-      )
-      
-      writeLines(header_info, file)
-      
-      # Append the updated_samples_data to the same file without column names since the headers are custom
-      write.table(updated_samples_data, file, append = TRUE, row.names = FALSE, col.names = FALSE, sep = ",", quote = TRUE)
-      
-      # add file to drive_folder
-      # Extract the user input values
-      name <- paste0(input$malex_name_input, input$malex_surname_input)
-      
-      malex <- input$malex_id_input
-      # Remove any spaces from these values
-      name <- gsub(" ", "", name)
-      malex <- gsub(" ", "", malex)
-      
-      
-      filename_upload = paste("MALEXSetup_", name, "_MALEX", malex, "_", format(Sys.Date(), "%d%b%Y"), ".csv", sep = "")
-      
-      
-      drive_folder <- drive_get(as_id("1muTascwjSUoB6Vip5IoDQoESMKVg-4pj"))
-      drive_upload(file, path = drive_folder, name = filename_upload)
-      
-      
-      shinyalert::shinyalert(title = "Success!", text = "Upload successful", type = "success")
+      if (canDownload()) {
+        print(length(missing_field_ids) ==0)
+        validate(
+          need(length(missing_field_ids) ==0, "Warning: Field IDs not found. Please quickly receive samples before proceeding.")
+        )
+        
+        empty_field_ids <- updated_samples_data$FieldID == ""
+        updated_samples_data$FieldID[empty_field_ids] <- updated_samples_data$LabID[empty_field_ids]
+        
+        # Write custom header rows
+        header_info <- c(
+          paste("Name:", input$dna_extraction_name_input),
+          paste("MALEX:", input$malex_input),
+          paste("Date:", format(Sys.Date(), "%d%b%Y")),
+          "",
+          paste(colnames(updated_samples_data), collapse = ",")
+        )
+        
+        writeLines(header_info, file)
+        
+        # Append the updated_samples_data to the same file without column names since the headers are custom
+        write.table(updated_samples_data, file, append = TRUE, row.names = FALSE, col.names = FALSE, sep = ",", quote = TRUE)
+        
+        # add file to drive_folder
+        # Extract the user input values
+        name <- paste0(input$malex_name_input, input$malex_surname_input)
+        
+        malex <- input$malex_id_input
+        # Remove any spaces from these values
+        name <- gsub(" ", "", name)
+        malex <- gsub(" ", "", malex)
+        
+        
+        filename_upload = paste("MALEXSetup_", name, "_MALEX", malex, "_", format(Sys.Date(), "%d%b%Y"), ".csv", sep = "")
+        
+        
+        drive_folder <- drive_get(as_id("1muTascwjSUoB6Vip5IoDQoESMKVg-4pj"))
+        drive_upload(file, path = drive_folder, name = filename_upload)
+        
+        
+        shinyalert::shinyalert(title = "Success!", text = "Upload successful", type = "success")
+      }
     }
   )
   

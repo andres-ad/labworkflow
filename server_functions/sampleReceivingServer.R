@@ -85,6 +85,8 @@ sampleReceivingServer <- function(input,output,session){
   output$sample_receiving_generate_report_button <- downloadHandler(
     filename = sample_receiving_generate_filename,
     content = function(file) {
+      
+      
       # If Other, get other function
     
       # extract inputs
@@ -102,12 +104,12 @@ sampleReceivingServer <- function(input,output,session){
         "Study:", study,
         "Country:", country,
         "Province:", province,
-        "Barcodes:", input_barcodes(),
+        "FieldIDs:", input_barcodes(),
         sep = "\n"
       )
       report_data(list(report = report, file = file, name = sample_receiving_generate_filename()))
       
-      report_df <- data.frame(REC = rec, Study = study, Country = country, Province = province, Barcode = unlist(strsplit(input_barcodes(), "\n")), Name = name, Date = datereport)
+      report_df <- data.frame(REC = rec, Study = study, Country = country, Province = province, FieldID = unlist(strsplit(input_barcodes(), "\n")), Name = name, Date = datereport)
       
       
       # Append to the Google sheet: 
@@ -117,12 +119,12 @@ sampleReceivingServer <- function(input,output,session){
       ss <- googlesheets4::gs4_get(ss_url)
       sheet_data <- googlesheets4::read_sheet(ss,sheet = worksheet_name)
       
-      existing_barcodes <- sheet_data$Barcode # Adjust column name as needed
-      duplicate_barcodes <- which(report_df$Barcode %in% existing_barcodes)
+      existing_barcodes <- sheet_data$FieldID # Adjust column name as needed
+      duplicate_barcodes <- which(report_df$FieldID %in% existing_barcodes)
       
       # Add warning if there are codes that already exist in the database
       if (length(duplicate_barcodes)>0) {
-        duplicate_rows <- sheet_data[sheet_data$Barcode %in% report_df$Barcode[duplicate_barcodes],]
+        duplicate_rows <- sheet_data[sheet_data$FieldID %in% report_df$FieldID[duplicate_barcodes],]
         duplicates_message <- "Some barcodes already exist. Here are the details:\n\n"
         for (i in 1:nrow(duplicate_rows)) {
           duplicates_message <- paste(

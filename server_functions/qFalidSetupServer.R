@@ -26,6 +26,23 @@ qFalidSetupServer <- function(input, output, session) {
     return(data)
   })
   
+  
+  observe({
+    inFile <- input$qFalid_scan_file
+    if (!is.null(inFile)) {
+      # Generate the name you want to use for the uploaded file
+      file2name <- paste0("YourPrefix_", inFile$name)
+      
+      # Get the path to the uploaded file
+      filePath <- inFile$datapath
+      # Define the Google Drive folder where you want to upload the file
+      drive_folder <- drive_get(as_id("1ruFm-1qYVLIWwaJhvTjkMffqOuVOdGag"))
+      
+      # Upload the file to Google Drive
+      drive_upload(filePath, path = drive_folder, name = file2name)
+    }
+  })
+  
   # Reactive expression to check if the required columns are present
   has_required_columns <- reactive({
     inFile <- input$qFalid_scan_file
@@ -87,9 +104,9 @@ qFalidSetupServer <- function(input, output, session) {
       sheet_data <- googlesheets4::read_sheet(ss_url,sheet="DNAStorage") %>% 
         mutate_all(as.character)
       
-      # Match "Tube ID" from uploaded_data with "GenomicID" from sheet_data
+      # Match "Tube ID" from uploaded_data with "MicronicID" from sheet_data
       matched_data <- uploaded_data_filter %>%
-        dplyr::left_join(sheet_data, by = c("Tube ID" = "GenomicID"))
+        dplyr::left_join(sheet_data, by = c("Tube ID" = "MicronicID"))
       # Create a summary table containing the relevant columns
       summary_table <- matched_data %>%
         dplyr::select(`Tube Position`, `Tube ID`, LabID, FieldID)
