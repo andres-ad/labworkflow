@@ -137,7 +137,7 @@ DNAExtractionSetupServer <- function(input,output,session){
         if (!is.null(barcode_file_input)) {
           uploaded_file <- barcode_file_input$datapath
           lines <- readLines(uploaded_file)
-          barcodes_line <- grep("FieldID:", lines)
+          barcodes_line <- grep("FieldIDs:", lines)
           barcodes <- lines[(barcodes_line + 1):length(lines)]
           num_samples <- length(barcodes)
           
@@ -379,9 +379,9 @@ DNAExtractionSetupServer <- function(input,output,session){
                               colhead = list(fg_params = list(hjust = 0.5, x = 0.5, fontsize = 12)) # Center headers and adjust font size
                             ))
     
-    # Calculate the proportion of the table size to the image
-    height_in_inches <- max(8, nrow(layout_df) * 0.5) # Adjust the 0.5 to your desired row height
-    width_in_inches <- max(12, ncol(layout_df) * 1)   # Adjust the 1 to your desired column width
+    height_in_inches <- max(10, nrow(layout_df) * 0.7) # Adjusted values
+    width_in_inches <- max(14, ncol(layout_df) * 1.2)   #
+    
     
     # Save as a PNG
     png(filename, width = width_in_inches * 100, height = height_in_inches * 100, res = 100)
