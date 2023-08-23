@@ -269,7 +269,7 @@ qFalidSetupServer <- function(input, output, session) {
         },
         content = function(file) {
           
-          write.csv(export_data,file, row.names = FALSE)
+          write.csv(export_data,file, row.names = FALSE,quote = FALSE)
           
     
           filename_upload = paste("qFALIDSetup_",input$qFalid_name_input,"_",

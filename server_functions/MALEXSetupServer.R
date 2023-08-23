@@ -492,8 +492,8 @@ DNAExtractionSetupServer <- function(input,output,session){
         
         # Write custom header rows
         header_info <- c(
-          paste("Name:", input$dna_extraction_name_input),
-          paste("MALEX:", input$malex_input),
+          paste("Name:", paste0(input$malex_name_input, input$malex_surname_input)),
+          paste("MALEX:", input$malex_id_input),
           paste("Date:", format(Sys.Date(), "%d%b%Y")),
           "",
           paste(colnames(updated_samples_data), collapse = ",")
