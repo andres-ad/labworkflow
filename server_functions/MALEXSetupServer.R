@@ -379,8 +379,8 @@ DNAExtractionSetupServer <- function(input,output,session){
                               colhead = list(fg_params = list(hjust = 0.5, x = 0.5, fontsize = 12)) # Center headers and adjust font size
                             ))
     
-    height_in_inches <- max(10, nrow(layout_df) * 0.7) # Adjusted values
-    width_in_inches <- max(14, ncol(layout_df) * 1.2)   #
+    height_in_inches <- max(10, nrow(layout_df) * 0.7*1.2) # Adjusted values
+    width_in_inches <- max(14, ncol(layout_df) * 1.2*1.2)   #
     
     
     # Save as a PNG
@@ -425,7 +425,7 @@ DNAExtractionSetupServer <- function(input,output,session){
   
   
   canDownload = reactiveVal(FALSE)
-  
+  missing_field_ids_react = reactiveVal(NULL)
   observeEvent(input$generate_layout,{
     
     ss_url <- "https://docs.google.com/spreadsheets/d/143S5AmwM1OZ-1vbUSNmj8jRUcLQS8LQvDbjvgFauc4s"
@@ -438,7 +438,7 @@ DNAExtractionSetupServer <- function(input,output,session){
       filter(Specimen_Type!="Empty")
     
     missing_field_ids <- setdiff(updated_samples_data$FieldID, sheet_data$FieldID)
-    
+    missing_field_ids_react(missing_field_ids)
     
     if (length(missing_field_ids) != 0) {
       # If the condition is not met, show a warning and prevent the download
@@ -470,10 +470,22 @@ DNAExtractionSetupServer <- function(input,output,session){
     content = function(file) {
       
       if (canDownload()) {
-        print(length(missing_field_ids) ==0)
+        print(length(missing_field_ids_react()) ==0)
         validate(
-          need(length(missing_field_ids) ==0, "Warning: Field IDs not found. Please quickly receive samples before proceeding.")
+          need(length(missing_field_ids_react()) ==0, "Warning: Field IDs not found. Please quickly receive samples before proceeding.")
         )
+        
+        ss_url <- "https://docs.google.com/spreadsheets/d/143S5AmwM1OZ-1vbUSNmj8jRUcLQS8LQvDbjvgFauc4s"
+        sheet_data <- googlesheets4::read_sheet(ss_url,sheet="Receiving") %>% 
+          mutate_all(as.character)
+        
+        
+        # Update empty FieldID to be the same as LabID
+        updated_samples_data <- samples_data()%>% 
+          filter(Specimen_Type!="Empty")
+        
+        missing_field_ids <- setdiff(updated_samples_data$FieldID, sheet_data$FieldID)
+        missing_field_ids_react(missing_field_ids)
         
         empty_field_ids <- updated_samples_data$FieldID == ""
         updated_samples_data$FieldID[empty_field_ids] <- updated_samples_data$LabID[empty_field_ids]
