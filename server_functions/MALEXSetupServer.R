@@ -137,7 +137,7 @@ DNAExtractionSetupServer <- function(input,output,session){
         if (!is.null(barcode_file_input)) {
           uploaded_file <- barcode_file_input$datapath
           lines <- readLines(uploaded_file)
-          barcodes_line <- grep("Barcodes:", lines)
+          barcodes_line <- grep("FieldID:", lines)
           barcodes <- lines[(barcodes_line + 1):length(lines)]
           num_samples <- length(barcodes)
           
@@ -369,21 +369,22 @@ DNAExtractionSetupServer <- function(input,output,session){
   
   # Replace the HTML line breaks with actual newline characters
   
+  
   save_table_as_image <- function(layout_df, filename) {
     # Define the grid table
     grid_table <- tableGrob(layout_df,
                             rows = NULL, # Hide row names
                             theme = ttheme_default(
-                              core = list(fg_params = list(hjust = 0.5, x = 0.5)), # Center text
-                              colhead = list(fg_params = list(hjust = 0.5, x = 0.5)) # Center headers
+                              core = list(fg_params = list(hjust = 0.5, x = 0.5, fontsize = 10)), # Center text and adjust font size
+                              colhead = list(fg_params = list(hjust = 0.5, x = 0.5, fontsize = 12)) # Center headers and adjust font size
                             ))
     
-    # Define the height and width of the image (you can adjust these)
-    height_in_inches <- 8
-    width_in_inches <- 12
+    # Calculate the proportion of the table size to the image
+    height_in_inches <- max(8, nrow(layout_df) * 0.5) # Adjust the 0.5 to your desired row height
+    width_in_inches <- max(12, ncol(layout_df) * 1)   # Adjust the 1 to your desired column width
     
     # Save as a PNG
-    png(filename, width = width_in_inches * 100, height = height_in_inches * 100)
+    png(filename, width = width_in_inches * 100, height = height_in_inches * 100, res = 100)
     grid.draw(grid_table)
     dev.off()
   }
