@@ -6,7 +6,7 @@ libraries <- c("shiny", "shinyjs", "rhandsontable",
                "googlesheets4","gargle",
                "googledrive","shinyalert",
                "webshot","htmlTable","grid",
-               "gridExtra")
+               "gridExtra","readxl","openxlsx")
 
 lapply(libraries, library, character.only = TRUE)
 
@@ -18,11 +18,8 @@ lapply(list.files("server_functions",pattern="\\.R$",full.names = TRUE),
 lapply(list.files("global",pattern="\\.R$",full.names = TRUE),
        source)
 
-# source the global variablesvariables 
-source("global_variables.R")
 
-
-environment <- "testing" # Change to production for the real world version
+app_environment <- "testing" # Change to production for the real world version
 
 
 # Define the UI as a set of tabs
