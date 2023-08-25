@@ -1,25 +1,30 @@
 qFalidSetupUI <- function(){
   tabPanel("qFALID Setup",
-           h4("qFALID Information:"),
-           fluidRow(
-             column(6, 
-                    textInput("qFalid_name_input", label = "Name:", 
-                              placeholder = "Enter name")),
-             column(6,
-                    numericInput("qfalid_input", label = "qFALID code:", 
-                              value = 0,min=0))
-           ),
+                    fluidRow(
+                      column(3,
+                             textInput("qfalid_name_input", label = "Name*:", placeholder = "Enter Name")
+                      ),
+                      column(3,
+                             textInput("qfalid_surname_input", label = "Surname*:", placeholder = "Enter Surname")
+                      ),
+                      column(3,
+                             dateInput("qfalid_date_input", label = "Date*:", value = Sys.Date())
+                      ),
+                      column(3,
+                             numericInput("qfalid_id_input",label = "qFALID:", value=global_get_default_qfalid_value(),min=0)
+                      )
+                    ),
            br(),
            h4("Upload Micronic scan"),
            h6("This should be a scan of the Micronic plate containing the tubes in the same positions as they will go into the qPCR plate."),
            fluidRow(
-             column(6, fileInput('qFalid_scan_file', 'Choose File',
+             column(6, fileInput('qfalid_scan_file', 'Choose File',
                                  accept = c('text/csv', 'text/comma-separated-values,text/plain', '.csv')
              ),
              
              ),
              column(6,
-                    uiOutput("qFalidScanDisplay_or_warning") # Combining scan display and warning
+                    uiOutput("qfalidScanDisplay_or_warning") # Combining scan display and warning
              )
            ),
            tags$hr(),

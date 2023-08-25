@@ -18,7 +18,7 @@ qFalidSetupServer <- function(input, output, session) {
   
   # Reactive expression for reading the uploaded CSV file
   qfalid_scan <- reactive({
-    inFile <- input$qFalid_scan_file
+    inFile <- input$qfalid_scan_file
     if (is.null(inFile)) {
       return(NULL)
     }
@@ -28,10 +28,10 @@ qFalidSetupServer <- function(input, output, session) {
   
   
   observe({
-    inFile <- input$qFalid_scan_file
+    inFile <- input$qfalid_scan_file
     if (!is.null(inFile)) {
       # Generate the name you want to use for the uploaded file
-      file2name <- paste0("YourPrefix_", inFile$name)
+      file2name <- paste0("qFALID",input$qfalid_id_input,"_",input$qfalid_name_input,input$qfalid_surname_input,"_", inFile$name)
       
       # Get the path to the uploaded file
       filePath <- inFile$datapath
@@ -45,7 +45,7 @@ qFalidSetupServer <- function(input, output, session) {
   
   # Reactive expression to check if the required columns are present
   has_required_columns <- reactive({
-    inFile <- input$qFalid_scan_file
+    inFile <- input$qfalid_scan_file
     required_columns <- c("Tube Position", "Tube ID", "Rack ID", "Date", "Time", "Free Text", "Status")
     if (!is.null(inFile) && tools::file_ext(inFile$name) == "csv") {
       data <- read.csv(inFile$datapath, header = TRUE, check.names = FALSE)
@@ -55,7 +55,7 @@ qFalidSetupServer <- function(input, output, session) {
   })
   
   output$qFalidScanDisplay_or_warning <- renderUI({
-    inFile <- input$qFalid_scan_file
+    inFile <- input$qfalid_scan_file
     if (!is.null(inFile)) {
       if (has_required_columns()) {
         data <- qfalid_scan()
@@ -263,8 +263,8 @@ qFalidSetupServer <- function(input, output, session) {
       # Setup the download handler
       output$download_file_qPCR <- downloadHandler(
         filename = function() {
-          paste("qFALIDSetup_",input$qFalid_name_input,"_",
-                "qFALID",input$qfalid_input,"_",
+          paste("qFALIDSetup_",input$qFalid_name_input,input$qFalid_surname_input,"_",
+                "qFALID",input$qfalid_id_input,"_",
                 format(Sys.Date(), "%d%b%Y"), ".csv", sep = "")
         },
         content = function(file) {
@@ -272,8 +272,8 @@ qFalidSetupServer <- function(input, output, session) {
           write.csv(export_data,file, row.names = FALSE,quote = FALSE)
           
     
-          filename_upload = paste("qFALIDSetup_",input$qFalid_name_input,"_",
-                                  "qFALID",input$qfalid_input,"_",
+          filename_upload = paste("qFALIDSetup_",input$qfalid_name_input,input$qfalid_surname_input,"_",
+                                  "qFALID",input$qfalid_id_input,"_",
                                   format(Sys.Date(), "%d%b%Y"), ".csv", sep = "")
           
           drive_folder <- drive_get(as_id("1LgL1yaU4YMz-x9brEhg16fYUzvlcospx"))
