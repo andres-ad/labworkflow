@@ -6,7 +6,8 @@ libraries <- c("shiny", "shinyjs", "rhandsontable",
                "googlesheets4","gargle",
                "googledrive","shinyalert",
                "webshot","htmlTable","grid",
-               "gridExtra","readxl","openxlsx")
+               "gridExtra","readxl","openxlsx","httr")
+
 
 lapply(libraries, library, character.only = TRUE)
 
@@ -15,11 +16,11 @@ lapply(list.files("ui_components",pattern="\\.R$",full.names = TRUE),
        source)
 lapply(list.files("server_functions",pattern="\\.R$",full.names = TRUE),
        source)
-lapply(list.files("global",pattern="\\.R$",full.names = TRUE),
-       source)
+source("global/global_variables.R")
+source("global/database_handling.R")
 
 
-app_environment <- "testing" # Change to production for the real world version
+
 
 
 # Define the UI as a set of tabs
@@ -55,10 +56,6 @@ ui <- fluidPage(
 
 # Define the server that is broken into each of the tabs
 server <- function(input, output, session) {
-  
-  
-  
-  
   sampleReceivingServer(input,output,session)
   DNAExtractionSetupServer(input,output,session)
   DNAStorageServer(input,output,session)

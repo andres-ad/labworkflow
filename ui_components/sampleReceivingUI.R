@@ -1,6 +1,5 @@
 sampleReceivingUI <- function(){
   tabPanel("Sample receiving", 
-           h4("Sample Receiving"),
            h4("Please enter one province/country at a time"),
            br(),
            fluidRow(
@@ -51,6 +50,6 @@ sampleReceivingUI <- function(){
            br(),
            verbatimTextOutput("sample_receiving_total_samples_text"),
            br(),
-           downloadButton("sample_receiving_generate_report_button", "Generate Report")
+           actionButton("sample_receiving_generate_report_button", "Process")
   )
 }
