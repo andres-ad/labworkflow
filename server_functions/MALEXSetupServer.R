@@ -1,71 +1,22 @@
-DNAExtractionSetupServer <- function(input,output,session){
+MALEXSetupServer <- function(input,output,session){
   
   
-  #server for Matching Samples
-  table_generated <- reactiveVal(FALSE)
-  
-  samples_data <- reactiveVal(data.frame(Position = character(), LabID = character(), FieldID = character()))
-  
-  layoutGenerated <- reactiveVal(FALSE)
+  malex_table_generated <- reactiveVal(FALSE)
+  malex_layout_generated <- reactiveVal(FALSE)
+  malex_numRows <- reactiveVal(0)
+  malex_samples_data <- reactiveVal(data.frame(Position = character(), LabID = character(), FieldID = character()))
   
   
-  numRows <- reactiveVal(0)
-  
-  
-  
-  
-  observeEvent(input$add_sample_group, {
-    # Increment the reactive value
-    numRows(numRows() + 1)
-    
-    newRowID <- as.character(numRows())
-    
-    # Create unique IDs for the new inputs
+  observeEvent(input$malex_add_sample_group, {
+    malex_numRows(malex_numRows() + 1)
+    newRowID <- as.character(malex_numRows())
     rowID <- paste0("sample_row_", newRowID)
     
-    newUI <- div(id = rowID, #class="row",
+    newUI <- div(id = rowID,
                  p(paste("Sample Group ",as.numeric(newRowID)+1)),
-                 fluidRow(
-                   column(3,tags$label(NULL),
-                          selectInput(paste0("study_input_DNAExt_", newRowID), label = "Study:", 
-                                      choices = c(global_study_codes,"Other"),
-                                      selected = "GenE8"),
-                          selectInput(paste0("content_input_", newRowID), label = "Content", 
-                                      choices = c("DNA(DBS)","Empty","DNA(RDT)","Other"),
-                                      selected = "DNA(DBS)")),
-                   column(2,tags$label(NULL),
-                          conditionalPanel(
-                            condition = paste0('input.study_input_DNAExt_', newRowID, ' == "Other"'),
-                            textInput(paste0("other_study_input_DNAExt_", newRowID), label = "Other Study", 
-                                      placeholder = "Enter Study"
-                            )
-                          ),
-                          conditionalPanel(
-                            condition = paste0('input.', "content_input_", newRowID, ' == "Other"'),
-                            textInput(paste0("other_content_input_", newRowID), label = "Other Content:", 
-                                      placeholder = "Enter Content"
-                            )
-                          )),
-                   column(3,tags$label(NULL),
-                          textInput(paste0("prefix_input_", newRowID), label = "LabID Prefix:",  
-                                    placeholder = "Enter prefix"),
-                          numericInput(paste0("starting_number_input_", newRowID),
-                                       label = "Start LabID#:", 
-                                       value = 0, 
-                                       min = 0)),
-                   column(3,tags$label(NULL),
-                          numericInput(paste0("number_of_samples_input_", newRowID), label = "# Samples", 
-                                       value = 0, 
-                                       min = 0),
-                          fileInput(paste0('received_barcodes_', newRowID),'Barcodes file if available'))
-                 ),
+                 malex_generateSampleGroupRowUI(newRowID),
                  tags$hr()
     )
-    
-    
-    
-    
-    # Insert new UI elements above the button
     insertUI(
       selector = "#sample_entry_area",
       where = "beforeEnd",
@@ -74,320 +25,162 @@ DNAExtractionSetupServer <- function(input,output,session){
   })
   
   
-  observeEvent(input$remove_sample_group, {
-    
-    # Only proceed if there are added rows to remove and at least one row is left
-    if (numRows() > 0) {
-      
-      # Extract the ID of the last row
-      lastRowID <- paste0("sample_row_", as.character(numRows()))
-      
-      # Remove the associated UI elements
+  observeEvent(input$malex_remove_sample_group, {
+    if (malex_numRows() > 0) {
+      lastRowID <- paste0("sample_row_", as.character(malex_numRows()))
       removeUI(selector = paste0("#", lastRowID))
-      
-      # Decrement the reactive value
-      numRows(numRows() - 1)
+      malex_numRows(malex_numRows() - 1)
     }
   })
   
-  # Function to generate a sequence for a given group
   
-  generate_samples_seq <- function(prefix, start, num) {
-    # If starting number is 0, just return the prefix
-    if (start == 0) {
-      return(rep(prefix, num))
-    }
-    
-    # Original logic for generating LabID
-    end <- start + num - 1
-    sapply(seq(start, end), function(x) paste0(prefix, sprintf("%03d", x)))
-  }
-  
-  
-  submit_samples_process <- function(){
-    # List to store each group's sequence
+  malex_generate_table_function <- function() {
     sequences_list <- list()
     warnings <- character(0)
     
-    for (i in 0:numRows()) {
+    get_input <- function(prefix, i) input[[paste0(prefix, i)]]
+    
+    for (i in 0:malex_numRows()) {
+      inputs <- lapply(c("prefix_input_", "starting_number_input_", "number_of_samples_input_"), get_input, i)
       
-      prefix <- input[[paste0("prefix_input_", i)]]
-      start <- input[[paste0("starting_number_input_", i)]]
-      num <- input[[paste0("number_of_samples_input_", i)]]
-      
-      # Make sure all fields have valid values before generating sequences
-      if(!is.null(prefix) && !is.null(start) && !is.null(num)) {
-        study_code_selected <- input[[paste0("study_input_DNAExt_", i)]]
-        if (study_code_selected == "Other") {
-          study_code <- input[[paste0("other_study_input_DNAExt_", i)]]
-        } else {
-          study_code <- study_code_selected
-        }
+      if(all(!sapply(inputs, is.null))) {
+        list_inputs <- lapply(c("study_input_malex_", "content_input_", "received_barcodes_"), get_input, i)
+        study_code <- ifelse(list_inputs[[1]] == "Other", get_input("other_study_input_malex_", i), list_inputs[[1]])
+        content_type <- ifelse(list_inputs[[2]] == "Other", get_input("other_content_input_", i), list_inputs[[2]])
+        barcodes <- if (!is.null(list_inputs[[3]])) readLines(list_inputs[[3]]$datapath)[-1] else rep("", inputs[[3]])
         
-        content_type_selected <- input[[paste0("content_input_", i)]]
-        if (content_type_selected == "Other") {
-          content_type <- input[[paste0("other_content_input_", i)]]
-        } else {
-          content_type <- content_type_selected
-        }
-        
-        # Handle barcodes for this group
-        barcode_file_input <- input[[paste0("received_barcodes_", i)]]
-        
-        if (!is.null(barcode_file_input)) {
-          uploaded_file <- barcode_file_input$datapath
-          lines <- readLines(uploaded_file)
-          barcodes_line <- grep("FieldIDs:", lines)
-          barcodes <- lines[(barcodes_line + 1):length(lines)]
-          num_samples <- length(barcodes)
-          
-          # Check if num_samples doesn't match the entered number (num)
-          if (num_samples != num) {
-            # Add warning to the warnings vector
-            warnings <- c(warnings, paste0("Number of samples in uploaded file is not what you entered for Group ", i+1, ", it has been overwritten."))
-            # Override num with num_samples
-            num <- num_samples
-          }
-        } else {
-          barcodes <- rep("", num) # Assuming 'num' is the number of samples in this group
-        }
-        
-        sequences_list[[i + 1]] <- list(
-          LabID = generate_samples_seq(prefix, start, num),
-          Study_Code = rep(study_code, num),
-          Specimen_Type = rep(content_type, num),
-          FieldID = barcodes # Adding FieldID directly
-        )
-      }
-      
-    }
-    
-    
-    # Before converting list to dataframe, check the total number of samples
-    total_samples <- sum(sapply(sequences_list,
-                                function(x) length(x$LabID)))
-    
-    # If total_samples exceeds 96, display a warning
-    if (total_samples > 96) {
-      showModal(modalDialog(
-        title = "Warning",
-        "Only 96 samples allowed.",
-        easyClose = TRUE
-      ))
-      return()  # exit the observer here without generating the dataframe
-    }
-    
-    # Convert list to dataframe
-    samples_df <- do.call(rbind,
-                          lapply(sequences_list,
-                                 function(x) data.frame(
-                                   LabID = x$LabID,
-                                   Study_Code = x$Study_Code,
-                                   Specimen_Type = x$Specimen_Type,
-                                   FieldID = x$FieldID)))
-    
-    # Get the number of rows in samples_df to help in generating Well and Column columns
-    num_rows <- nrow(samples_df)
-    # Create Well column based on the number of rows
-    wells <- rep(LETTERS[1:8], times = 12)[seq_len(num_rows)]
-    
-    # Create Column column based on the number of rows
-    columns <- sprintf('%02d', rep(1:12, each = 8))[seq_len(num_rows)]
-    
-    # Add the Well and Column columns to samples_df
-    samples_df$Well <- wells
-    samples_df$Column <- columns
-    samples_df$Position <- paste0(samples_df$Well,samples_df$Column)
-    
-    # Reorder the columns
-    samples_df <- samples_df[, c('Position','Study_Code','Specimen_Type','LabID', 'FieldID')]
-    
-    
-    repeated_lab_ids <- samples_df$LabID[duplicated(samples_df$LabID)& samples_df$LabID != ""]
-    repeated_field_ids <- samples_df$FieldID[duplicated(samples_df$FieldID) & samples_df$FieldID != ""]
-    
-    
-    if (length(repeated_lab_ids) > 0) {
-      warnings <- c(warnings, paste("Repeated LabID detected: ", paste(repeated_lab_ids, collapse = ", ")))
-    }
-    
-    if (length(repeated_field_ids) > 0) {
-      warnings <- c(warnings, paste("Repeated FieldID detected: ", paste(repeated_field_ids, collapse = ", ")))
-    }
-    
-    skip_block <- FALSE
-    
-    # Check for any non-null barcode inputs
-    for (i in 0:numRows()) {
-      if (!is.null(input[[paste0("received_barcodes_", i)]])) {
-        skip_block <- TRUE
-        break
+        sequences_list[[i + 1]] <- list(LabID = malex_generate_samples_seq(inputs[[1]], inputs[[2]], inputs[[3]]), Study_Code = rep(study_code, inputs[[3]]), Specimen_Type = rep(content_type, inputs[[3]]), FieldID = barcodes)
       }
     }
     
-    # Only execute the following code block if skip_block is FALSE
+    total_samples <- sum(sapply(sequences_list, function(x) length(x$LabID)))
+    if (total_samples > 96) return(showModal(modalDialog(title = "Warning", "Only 96 samples allowed.", easyClose = TRUE)))
+    
+    samples_df <- do.call(rbind, lapply(sequences_list, as.data.frame)) %>%
+      mutate(
+        Well = rep(LETTERS[1:8], times = 12)[1:n()],
+        Column = sprintf('%02d', rep(1:12, each = 8))[1:n()],
+        Position = paste0(Well, Column)
+      ) %>% 
+      select(Position,Study_Code,Specimen_Type,LabID,FieldID)
+    
+    repeated_ids <- function(column_name) samples_df[[column_name]][duplicated(samples_df[[column_name]]) & samples_df[[column_name]]!="" & samples_df[["Specimen_Type"]]!="Empty"]
+    
+    for (field in c("LabID", "FieldID")) {
+      repeated_field_values = repeated_ids(field)
+      if(length(repeated_field_values) > 0) {
+        warnings <- c(warnings, paste("Repeated ", field, " detected:", paste(repeated_field_values, collapse = ", ")))
+      }
+    }
+    
+    if(length(warnings) > 0) showModal(modalDialog(title = "Warnings", HTML(paste(na.omit(warnings), collapse = "<br>")), easyClose = TRUE))
+    
+    skip_block <- any(sapply(0:malex_numRows(), function(i) !is.null(get_input("received_barcodes_", i))))
+    
     if (!skip_block) {
-      # Existing samples_data
-      previous_samples <- samples_data()
-      
-      # Match the rows based on Position and LabID
-      matching_rows <- ((samples_df$Position %in% previous_samples$Position) & previous_samples$FieldID != "")
-      
-      # For rows that match, use FieldID from previous_samples
+      previous_samples <- malex_samples_data()
+      matching_rows <- (samples_df$Position %in% previous_samples$Position[previous_samples$FieldID != ""]) 
       samples_df$FieldID[matching_rows] <- previous_samples$FieldID[match(samples_df$Position[matching_rows], previous_samples$Position)]
     }
     
-    # For non-matching rows, FieldID is already empty
+    samples_df <- transform(samples_df, FieldID = toupper(FieldID), LabID = toupper(LabID))
+    malex_samples_data(samples_df)
     
-    # Update the reactive value with the new data
-    samples_df$FieldID = toupper(samples_df$FieldID )
-      samples_df$LabID = toupper(samples_df$LabID )
-    samples_data(samples_df)
-    
-    if (length(warnings) > 0) {
-      showModal(modalDialog(
-        title = "Warnings",
-        HTML(paste(warnings, collapse = "<br>")),
-        easyClose = TRUE
-      ))
-    }
-    
-    # Display the data frame
-    output$samples_output <- renderRHandsontable({
-      df <- samples_data() %>% 
-        filter(Specimen_Type!="Empty")
-      
-      if (!is.null(df)) {
-        rhandsontable(df, rowHeaders = FALSE)
-      }
-    })
-    table_generated(TRUE)
-    output$generate_layout_button <- renderUI({
-      if (table_generated()) {
-        actionButton("generate_layout", "Generate layout")
-      }
-    })
-    
-    
+    output$malex_samples_table <- renderRHandsontable({ if (!is.null(df <- malex_samples_data() %>% filter(Specimen_Type != "Empty"))) rhandsontable(df, rowHeaders = FALSE) })
+    malex_table_generated(TRUE)
+    output$generate_layout_button <- renderUI({ if (malex_table_generated()) actionButton("generate_layout", "Generate layout") })
   }
   
-  observeEvent(input$submit_samples, {
-    submit_samples_process()
+  
+  observeEvent(input$malex_generate_table, {
+    malex_generate_table_function()
+    output$malex_table_input_ui<- renderUI({
+      tagList(
+        p("Use this table to manually add or scan FieldIDs"),
+        rHandsontableOutput("malex_samples_table",height = "200px"),
+        tags$hr()
+      )
+    })
   })
   
-  output$table_generated <- reactive({ table_generated() })
+  output$malex_table_generated <- reactive({ malex_table_generated() })
   
   observe({
-    if (!is.null(input$samples_output)) {
+    if (!is.null(input$malex_samples_table)) {
       # Capture the current state of the table after user edits
-      new_data <- hot_to_r(input$samples_output)
+      new_data <- hot_to_r(input$malex_samples_table)
+      new_data$FieldID = toupper(new_data$FieldID)
       # Update the reactive value
-      samples_data(new_data)
+      malex_samples_data(new_data)
     }
   })
   
   layout_df_react = reactiveVal()
+  
   observeEvent(input$generate_layout, {
-    layoutGenerated(TRUE)
     
-    # Fetch the current dataframe
-    df <- samples_data()%>% 
+    # Update empty FieldID to be the same as LabID
+    updated_samples_data <- malex_samples_data()%>% 
       filter(Specimen_Type!="Empty")
     
-    # Create an empty layout matrix with 8 rows (A-H) and 12 columns (1-12)
-    layout <- matrix("", nrow = 8, ncol = 12, dimnames = list(LETTERS[1:8], 1:12))
+    missing_field_ids <- setdiff(updated_samples_data$FieldID, database_data[["Receiving"]]$FieldID)
+    missing_field_ids_react(missing_field_ids)
     
-    # Loop through each row of the dataframe
-    for(i in 1:nrow(df)) {
-      # Extract row and column info from the Position column (e.g., "E02")
-      row_index <- which(LETTERS == substr(df$Position[i], 1, 1))
-      col_index <- as.integer(substr(df$Position[i], 2, 3))
-      
-      # Assign LabID and FieldID, concatenated with '<br/>' to the correct position in the layout matrix
-      layout[row_index, col_index] <- paste(df$LabID[i], df$FieldID[i], sep = "<br/>")
+    if (length(missing_field_ids) != 0) {
+      # If the condition is not met, show a warning and prevent the download
+      shinyalert::shinyalert("Warning", paste0("Field IDs not found \n",paste(missing_field_ids, collapse = ", "),"\n Please quickly receive samples before proceeding."), type = "warning")
+      canDownload(FALSE)
+    } else {
+      canDownload(TRUE)
     }
     
     
-    # Create a new column filled with 'LabID<br/>FieldID'
-    label_column <- matrix(rep("LabID<br/>FieldID", nrow(layout)), ncol = 1)
     
-    # Combine the existing layout matrix with the label_column
-    layout_with_labels <- cbind(layout, label_column)
+    repeated_ids <- function(column_name) updated_samples_data[[column_name]][duplicated(updated_samples_data[[column_name]]) & updated_samples_data[[column_name]]!="" & updated_samples_data[["Specimen_Type"]]!="Empty"]
+    
+    for (field in c("LabID", "FieldID")) {
+      repeated_field_values = repeated_ids(field)
+      if(length(repeated_field_values) > 0) {
+        shinyalert::shinyalert("Warning", paste0(field," repeated: \n",paste(unique(repeated_field_values), collapse = ", ")), type = "warning")
+        canDownload(FALSE)
+      }else {
+        canDownload(TRUE)
+      }
+    }
     
     
-    # Convert the layout matrix to a data frame for rendering
-    layout_df <- as.data.frame(layout_with_labels)
-    
-    colnames(layout_df)[ncol(layout_df)] <- " "
-    
-    layout_df_react(layout_df)
-    # Render the layout as a table (similar to the code in output$layout_table)
-    output$layout_output_ui <- renderUI({
-      tagList(
-        downloadButton("download_malex_layout", "Download Table Image"),
-        downloadButton('downloadData', 'Dowload/Upload data'),
+    if(canDownload()){
+      
+      
+      malex_layout_generated(TRUE)
+      df <- malex_samples_data() %>% filter(Specimen_Type!="Empty")
+      
+      # Create an empty layout matrix with 8 rows (A-H) and 12 columns (1-12)
+      layout <- matrix("", nrow = 8, ncol = 12, dimnames = list(LETTERS[1:8], 1:12))
+      
+      row_idx <- match(substr(df$Position, 1, 1), LETTERS)
+      col_idx <- as.integer(substr(df$Position, 2, 3))
+      layout[cbind(row_idx, col_idx)] <- paste(df$LabID, df$FieldID, sep = "<br/>")
+      
+      label_col <- rep("LabID<br/>FieldID", nrow(layout))
+      layout_with_labels <- cbind(layout, label_col)
+      
+      # Convert the layout matrix to a data frame for rendering
+      layout_df <- as.data.frame(layout_with_labels)
+      colnames(layout_df)[ncol(layout_df)] <- " "
+      
+      layout_df_react(layout_df)
+      
+      
+      output$malex_layout_output_ui <- renderUI({
+        malex_createTableUI(layout_df) # This function could encapsulate all the repetitive rendering and styling logic
         
-        renderDT({
-          datatable(layout_df,
-                    escape = FALSE, # to allow HTML content in cells
-                    options = list(
-                      columnDefs = list(
-                        list(targets = "_all", orderable = FALSE, className = "dt-center"),
-                        list(targets = "_all", className = "dt-head-center")
-                      ),
-                      pageLength = -1,
-                      dom = 't',
-                      autoWidth = TRUE
-                    ),
-                    rownames = TRUE
-          ) %>%
-            formatStyle(columns = 0,
-                        fontWeight = 'bold',
-                        fontSize = '10px',
-                        padding = '1px 1px'
-            ) %>%
-            formatStyle(columns = 1:(ncol(layout_df)-1),
-                        borderRight = '1px solid black',
-                        borderBottom = '1px solid black',
-                        fontSize = '10px',
-                        padding = '1px 1px'
-            )%>%
-            formatStyle(columns = ncol(layout_df),
-                        borderRight = 'none',
-                        borderBottom = 'none',
-                        fontSize = '10px',
-                        padding = '1px 1px'
-            )
-        })
-      )
-    })
-    
-    
+      })
+    }
   })
   
   
   
-  # Replace the HTML line breaks with actual newline characters
-  
-  
-  save_table_as_image <- function(layout_df, filename) {
-    # Define the grid table
-    grid_table <- tableGrob(layout_df,
-                            rows = NULL, # Hide row names
-                            theme = ttheme_default(
-                              core = list(fg_params = list(hjust = 0.5, x = 0.5, fontsize = 10)), # Center text and adjust font size
-                              colhead = list(fg_params = list(hjust = 0.5, x = 0.5, fontsize = 12)) # Center headers and adjust font size
-                            ))
-    
-    height_in_inches <- max(10, nrow(layout_df) * 0.7*1.2) # Adjusted values
-    width_in_inches <- max(14, ncol(layout_df) * 1.2*1.2)   #
-    
-    
-    # Save as a PNG
-    png(filename, width = width_in_inches * 100, height = height_in_inches * 100, res = 100)
-    grid.draw(grid_table)
-    dev.off()
-  }
   
   layout_df2_react <- reactive({
     # Get the dataframe from the existing reactive expression
@@ -403,22 +196,15 @@ DNAExtractionSetupServer <- function(input,output,session){
     layout_df2
   })# Call the save_table_as_image function
   
-  output$download_malex_layout <- downloadHandler(
-    filename = function() {
-      # Extract the user input values
-      name <- paste0(input$malex_name_input, input$malex_surname_input)
-      id <- input$malex_id_input
-      # Remove any spaces from these values
-      name <- gsub(" ", "", name)
-      id <- gsub(" ", "", id)
-      
-      # Construct the filename
-      paste0("MALEXSetup_", name, "_", format(Sys.Date(), "%d%b%Y"), "_MALEX", id, ".png")
-    },
-    content = function(file) {
-      # Call the save_table_as_image function with the reactive layout data
-      save_table_as_image(layout_df2_react(), file)
-    }
+  
+  observeEvent(input$download_malex_layout_image, {
+    name <- paste0(input$malex_name_input, input$malex_surname_input)
+    id <- input$malex_id_input
+    name <- gsub(" ", "", name)
+    id <- gsub(" ", "", id)
+    filename = paste0("MALEXSetup_", name, "_", format(Sys.Date(), "%d%b%Y"), "_MALEX", id, ".png")
+    save_table_as_image(layout_df2_react(), filename, path_for_files,input)
+  }
   )
   
   
@@ -426,29 +212,7 @@ DNAExtractionSetupServer <- function(input,output,session){
   
   canDownload = reactiveVal(FALSE)
   missing_field_ids_react = reactiveVal(NULL)
-  observeEvent(input$generate_layout,{
-    
-    ss_url <- "https://docs.google.com/spreadsheets/d/143S5AmwM1OZ-1vbUSNmj8jRUcLQS8LQvDbjvgFauc4s"
-    sheet_data <- googlesheets4::read_sheet(ss_url,sheet="Receiving") %>% 
-      mutate_all(as.character)
-    
-    
-    # Update empty FieldID to be the same as LabID
-    updated_samples_data <- samples_data()%>% 
-      filter(Specimen_Type!="Empty")
-    
-    missing_field_ids <- setdiff(updated_samples_data$FieldID, sheet_data$FieldID)
-    missing_field_ids_react(missing_field_ids)
-    
-    if (length(missing_field_ids) != 0) {
-      # If the condition is not met, show a warning and prevent the download
-      shinyalert::shinyalert("Warning", "Field IDs not found. Please quickly receive samples before proceeding.", type = "warning")
-      canDownload(FALSE)
-    } else {
-      canDownload(TRUE)
-    }
-    
-  })
+  
   
   
   output$downloadData <- downloadHandler(
@@ -470,7 +234,6 @@ DNAExtractionSetupServer <- function(input,output,session){
     content = function(file) {
       
       if (canDownload()) {
-        print(length(missing_field_ids_react()) ==0)
         validate(
           need(length(missing_field_ids_react()) ==0, "Warning: Field IDs not found. Please quickly receive samples before proceeding.")
         )
@@ -481,7 +244,7 @@ DNAExtractionSetupServer <- function(input,output,session){
         
         
         # Update empty FieldID to be the same as LabID
-        updated_samples_data <- samples_data()%>% 
+        updated_samples_data <- malex_samples_data()%>% 
           filter(Specimen_Type!="Empty")
         
         missing_field_ids <- setdiff(updated_samples_data$FieldID, sheet_data$FieldID)

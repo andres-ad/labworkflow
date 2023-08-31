@@ -100,12 +100,12 @@ sampleReceivingServer <- function(input,output,session){
     )
     filename <- sample_receiving_generate_filename()
     
-    write(report, file = paste0(path_for_files,"/",filename))
+    write(report, file = paste0(path_for_files,"/Receiving/",filename))
     
     # 2. Try to upload to Google Drive
     tryCatch({
       drive_folder <- drive_get(as_id("1WnrshcBiA_ZOeNGCjOI4RSZSpbKDZHNP"))
-      drive_upload(paste0(path_for_files,"/",filename), path = drive_folder, name = filename)
+      drive_upload(paste0(path_for_files,"/Receiving/",filename), path = drive_folder, name = filename)
     }, error = function(e) {
       warning("Could not connect to internet, txt report was not uploaded to Google Drive, only a local copy was made, which you should have saved")
     })

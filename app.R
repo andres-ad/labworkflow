@@ -17,7 +17,7 @@ lapply(list.files("ui_components",pattern="\\.R$",full.names = TRUE),
 lapply(list.files("server_functions",pattern="\\.R$",full.names = TRUE),
        source)
 source("global/global_variables.R")
-source("global/database_handling.R")
+source("global/malex_fxns.R")
 
 
 
@@ -43,7 +43,7 @@ ui <- fluidPage(
   useShinyjs(),
   tabsetPanel(
     sampleReceivingUI(),
-    DNAExtractionSetupUI(),
+    MALEXSetupUI(),
     DNAStorageUI(),
     qFalidSetupUI()#,
     #qFalidResultUI(),
@@ -57,7 +57,7 @@ ui <- fluidPage(
 # Define the server that is broken into each of the tabs
 server <- function(input, output, session) {
   sampleReceivingServer(input,output,session)
-  DNAExtractionSetupServer(input,output,session)
+  MALEXSetupServer(input,output,session)
   DNAStorageServer(input,output,session)
   qFalidSetupServer(input,output,session)
   qFalidResultServer(input,output,session)
