@@ -37,7 +37,7 @@ malex_generate_samples_seq <- function(prefix, start, num) {
 malex_createTableUI <- function(layout_df) {
   tagList(
     actionButton("download_malex_layout_image", "Download Layout Image"),
-    #actionButton('downloadData', 'Dowload/Upload data'),
+    actionButton('submit_malex_report', 'Submit data'),
     renderDT({
       datatable(layout_df, escape = FALSE, options = list(
         columnDefs = list(

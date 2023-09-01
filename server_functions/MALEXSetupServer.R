@@ -1,5 +1,6 @@
 MALEXSetupServer <- function(input,output,session){
   
+  malex_canDownload = reactiveVal(FALSE)
   
   malex_table_generated <- reactiveVal(FALSE)
   malex_layout_generated <- reactiveVal(FALSE)
@@ -124,14 +125,13 @@ MALEXSetupServer <- function(input,output,session){
       filter(Specimen_Type!="Empty")
     
     missing_field_ids <- setdiff(updated_samples_data$FieldID, database_data[["Receiving"]]$FieldID)
-    missing_field_ids_react(missing_field_ids)
     
     if (length(missing_field_ids) != 0) {
       # If the condition is not met, show a warning and prevent the download
       shinyalert::shinyalert("Warning", paste0("Field IDs not found \n",paste(missing_field_ids, collapse = ", "),"\n Please quickly receive samples before proceeding."), type = "warning")
-      canDownload(FALSE)
+      malex_canDownload(FALSE)
     } else {
-      canDownload(TRUE)
+      malex_canDownload(TRUE)
     }
     
     
@@ -142,27 +142,28 @@ MALEXSetupServer <- function(input,output,session){
       repeated_field_values = repeated_ids(field)
       if(length(repeated_field_values) > 0) {
         shinyalert::shinyalert("Warning", paste0(field," repeated: \n",paste(unique(repeated_field_values), collapse = ", ")), type = "warning")
-        canDownload(FALSE)
+        malex_canDownload(FALSE)
       }else {
-        canDownload(TRUE)
+        malex_canDownload(TRUE)
       }
     }
     
     
-    if(canDownload()){
+    if(malex_canDownload()){
       
       
       malex_layout_generated(TRUE)
-      df <- malex_samples_data() %>% filter(Specimen_Type!="Empty")
+      df <- malex_samples_data() %>% filter(Specimen_Type!="Empty") %>% 
+        left_join(database_data[["Receiving"]],by = "FieldID")
       
       # Create an empty layout matrix with 8 rows (A-H) and 12 columns (1-12)
       layout <- matrix("", nrow = 8, ncol = 12, dimnames = list(LETTERS[1:8], 1:12))
       
       row_idx <- match(substr(df$Position, 1, 1), LETTERS)
       col_idx <- as.integer(substr(df$Position, 2, 3))
-      layout[cbind(row_idx, col_idx)] <- paste(df$LabID, df$FieldID, sep = "<br/>")
+      layout[cbind(row_idx, col_idx)] <- paste(df$LabID, df$FieldID, df$Province, df$Country, sep = "<br/>")
       
-      label_col <- rep("LabID<br/>FieldID", nrow(layout))
+      label_col <- rep("LabID<br/>FieldID<br/>Province<br/>Country", nrow(layout))
       layout_with_labels <- cbind(layout, label_col)
       
       # Convert the layout matrix to a data frame for rendering
@@ -202,23 +203,18 @@ MALEXSetupServer <- function(input,output,session){
     id <- input$malex_id_input
     name <- gsub(" ", "", name)
     id <- gsub(" ", "", id)
-    filename = paste0("MALEXSetup_", name, "_", format(Sys.Date(), "%d%b%Y"), "_MALEX", id, ".png")
+    filename = paste0(prefix_files,"MALEXSetup_", name, "_", format(Sys.Date(), "%d%b%Y"), "_MALEX", id, ".png")
     save_table_as_image(layout_df2_react(), filename, path_for_files,input)
   }
   )
   
   
   
-  
-  canDownload = reactiveVal(FALSE)
-  missing_field_ids_react = reactiveVal(NULL)
-  
-  
-  
-  output$downloadData <- downloadHandler(
+  observeEvent(input$submit_malex_report, {
     
-    filename = function() {
-      # Extract the user input values
+    if (malex_canDownload()) {
+      
+      
       name <- paste0(input$malex_name_input, input$malex_surname_input)
       
       malex <- input$malex_id_input
@@ -226,68 +222,37 @@ MALEXSetupServer <- function(input,output,session){
       name <- gsub(" ", "", name)
       malex <- gsub(" ", "", malex)
       
-      paste("MALEXSetup_", name, "_MALEX", malex, "_", format(Sys.Date(), "%d%b%Y"), ".csv", sep = "")
-    },
-    
-    
-    
-    content = function(file) {
+      malex_report_filename = paste(prefix_files,"MALEXSetup_", name, "_MALEX", malex, "_", format(Sys.Date(), "%d%b%Y"), ".csv", sep = "")
       
-      if (canDownload()) {
-        validate(
-          need(length(missing_field_ids_react()) ==0, "Warning: Field IDs not found. Please quickly receive samples before proceeding.")
-        )
-        
-        ss_url <- "https://docs.google.com/spreadsheets/d/143S5AmwM1OZ-1vbUSNmj8jRUcLQS8LQvDbjvgFauc4s"
-        sheet_data <- googlesheets4::read_sheet(ss_url,sheet="Receiving") %>% 
-          mutate_all(as.character)
-        
-        
-        # Update empty FieldID to be the same as LabID
-        updated_samples_data <- malex_samples_data()%>% 
-          filter(Specimen_Type!="Empty")
-        
-        missing_field_ids <- setdiff(updated_samples_data$FieldID, sheet_data$FieldID)
-        missing_field_ids_react(missing_field_ids)
-        
-        empty_field_ids <- updated_samples_data$FieldID == ""
-        updated_samples_data$FieldID[empty_field_ids] <- updated_samples_data$LabID[empty_field_ids]
-        
-        # Write custom header rows
-        header_info <- c(
-          paste("Name:", paste0(input$malex_name_input, input$malex_surname_input)),
-          paste("MALEX:", input$malex_id_input),
-          paste("Date:", format(Sys.Date(), "%d%b%Y")),
-          "",
-          paste(colnames(updated_samples_data), collapse = ",")
-        )
-        
-        writeLines(header_info, file)
-        
-        # Append the updated_samples_data to the same file without column names since the headers are custom
-        write.table(updated_samples_data, file, append = TRUE, row.names = FALSE, col.names = FALSE, sep = ",", quote = TRUE)
-        
-        # add file to drive_folder
-        # Extract the user input values
-        name <- paste0(input$malex_name_input, input$malex_surname_input)
-        
-        malex <- input$malex_id_input
-        # Remove any spaces from these values
-        name <- gsub(" ", "", name)
-        malex <- gsub(" ", "", malex)
-        
-        
-        filename_upload = paste("MALEXSetup_", name, "_MALEX", malex, "_", format(Sys.Date(), "%d%b%Y"), ".csv", sep = "")
-        
-        
-        drive_folder <- drive_get(as_id("1muTascwjSUoB6Vip5IoDQoESMKVg-4pj"))
-        drive_upload(file, path = drive_folder, name = filename_upload)
-        
-        
-        shinyalert::shinyalert(title = "Success!", text = "Upload successful", type = "success")
-      }
-    }
-  )
-  
+      malex_report_filename_with_path = paste0(path_for_files,"/MALEXSetup/",malex_report_filename)
+      
+      updated_samples_data <- malex_samples_data()%>% 
+        filter(Specimen_Type!="Empty")
+      empty_field_ids <- updated_samples_data$FieldID == ""
+      updated_samples_data$FieldID[empty_field_ids] <- updated_samples_data$LabID[empty_field_ids]
+      
+      header_info <- c(
+        paste("Name:", paste0(input$malex_name_input, input$malex_surname_input)),
+        paste("MALEX:", input$malex_id_input),
+        paste("Date:", format(Sys.Date(), "%d%b%Y")),
+        "",
+        paste(colnames(updated_samples_data), collapse = ",")
+      )
+      
+      
+      writeLines(header_info, malex_report_filename_with_path)
+      write.table(updated_samples_data, malex_report_filename_with_path, append = TRUE, row.names = FALSE, col.names = FALSE, sep = ",", quote = TRUE)
+      
+      shinyalert::shinyalert(title = "Success!", text = paste0("Image saved successfully \n Location: ",malex_report_filename_with_path), type = "success")
+      
+      tryCatch({
+        drive_folder <- drive_get(as_id("1jxB1o_usTMXV-Bv-auSKEBfd8CeX6PSY"))
+        drive_upload(malex_report_filename_with_path, path = drive_folder, name = malex_report_filename)
+        shinyalert::shinyalert(title = "Success!", text = "CSV backed up in Google Drive", type = "success")
+      }, error = function(e) {
+        shinyalert::shinyalert(title = "Warning!", text = "Could not back up CSV in Google Drive", type = "warning")
+      })
+    }  
+  })
   
 }

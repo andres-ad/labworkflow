@@ -1,8 +1,7 @@
-
 app_environment <- "testing" # Change to production for the real world version
 path_for_files <- "C:/Data/NICD/DatabaseExports"
 
-
+prefix_files<-ifelse(app_environment=="testing","Testing_","")
 ### GLOBAL FUNCTIONS
 
 get_input_or_other <- function(input_val, other_input_val) {
@@ -147,6 +146,21 @@ update_database <- function(local_database,local_database_path,tab,google_sheet_
 
 
 
+global_get_default_value <- function(sheet_name, pattern) {
+  1 + suppressWarnings(max(as.numeric(gsub(pattern, "", database_data[[sheet_name]][[pattern]])), na.rm = TRUE))
+}
+
+global_get_default_malex_value <- function() {
+  global_get_default_value("DNAStorage", "MALEX")
+}
+
+global_get_default_qfalid_value <- function() {
+  global_get_default_value("qFALIDResults", "qFALID")
+}
+
+global_get_default_rec_value <- function() {
+  global_get_default_value("Receiving", "REV")
+}
 
 
 
@@ -168,20 +182,4 @@ local_database_path = get_local_database_paths(app_environment)
 google_sheet_url = get_google_sheet_url(app_environment)
 
 database_data <- initialize_app(google_sheet_url,local_database_path)
-
-global_get_default_value <- function(sheet_name, pattern) {
-  1 + suppressWarnings(max(as.numeric(gsub(pattern, "", database_data[[sheet_name]][[pattern]])), na.rm = TRUE))
-}
-
-global_get_default_malex_value <- function() {
-  global_get_default_value("DNAStorage", "MALEX")
-}
-
-global_get_default_qfalid_value <- function() {
-  global_get_default_value("qFALIDResults", "qFALID")
-}
-
-global_get_default_rec_value <- function() {
-  global_get_default_value("Receiving", "REV")
-}
 
