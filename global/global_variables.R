@@ -1,4 +1,4 @@
-app_environment <- "testing" # Change to production for the real world version
+app_environment <- "testing" # Change to production for the real world version  OR testing for testing
 path_for_files <- "C:/Data/NICD/DatabaseExports"
 
 prefix_files<-ifelse(app_environment=="testing","Testing_","")
