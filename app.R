@@ -50,12 +50,12 @@ ui <- fluidPage(
     sampleReceivingUI(),
     MALEXSetupUI(),
     DNAStorageUI(),
-    qFalidSetupUI()#,
-    #qFalidResultUI(),
-    #madhatSetupUI(),
-    #poolSetupUI(),
-    #superpoolSetupUI(),
-    #madhatResultsUI()
+    qFalidSetupUI(),
+    qFalidResultUI(),
+    madhatSetupUI(),
+    poolSetupUI(),
+    superpoolSetupUI(),
+    madhatResultsUI()
   )
 )
 

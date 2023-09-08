@@ -1,5 +1,5 @@
 sampleReceivingServer <- function(input,output,session){
-  
+  database_data_reactive = reactiveVal(database_data)
   output$sample_receiving_province_ui <- renderUI({
     province_input <- selectInput("sample_receiving_province_input", label = "Province:",
                                   choices = c(global_provinces_names[[input$sample_receiving_country_input]],
@@ -14,7 +14,7 @@ sampleReceivingServer <- function(input,output,session){
   })
   
   
-
+  
   # Make a reactive variable to store the number of barcodes when scanned
   
   sample_receiving_barcodes_reactive <- reactiveVal(NULL)
@@ -115,16 +115,25 @@ sampleReceivingServer <- function(input,output,session){
     local_database_updated = database_data
     local_database_updated[["Receiving"]] = rbind(database_data[["Receiving"]], report_df)
     database_data = update_database(local_database_updated, local_database_path, "Receiving", google_sheet_url)
+    return(database_data)
   }
   
   
   observeEvent(input$sample_receiving_generate_report_button, {
+    database_data=database_data_reactive()
     barcodes <- unlist(strsplit(sample_receiving_input_barcodes(), "\n"))
     database_barcodes = database_data[["Receiving"]]$FieldID
     # Check for duplicates
     duplicates <- barcodes[barcodes %in% database_barcodes]
     # If there are duplicates, show a confirmation dialog
-    if (length(duplicates) > 0) {
+   
+    if( paste0("REV", input$sample_receiving_REV_input) %in% unique(database_data[["Receiving"]]$REV)) {
+      shinyalert::shinyalert(
+        title = "Warning!",
+        text = paste0("REV", input$sample_receiving_REV_input," already exists in the database, fix that and resubmit"),
+        type = "warning"
+      )
+    }else if (length(duplicates) > 0) {
       shinyalert::shinyalert(
         title = "Warning!",
         text = paste("These barcodes already exist in the database:", paste(unique(duplicates), collapse = ", "), ". Do you want to proceed? Note that only the last entry will be used to link to receiving information"),
@@ -134,15 +143,16 @@ sampleReceivingServer <- function(input,output,session){
         cancelButtonText = "Cancel",
         callbackR = function(x) {
           if (x) { # If the user clicks "Proceed"
-            process_barcode_report()
+            database_data = process_barcode_report()
+            database_data_reactive(database_data)
           }
         }
       )
-    } else {
-      process_barcode_report()
+    } else{
+      database_data = process_barcode_report()
+      database_data_reactive(database_data)
     }
   })
   
 }
-  
-  
+

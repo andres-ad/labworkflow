@@ -31,15 +31,24 @@ qFalidSetupServer <- function(input, output, session) {
     inFile <- input$qfalid_scan_file
     if (!is.null(inFile)) {
       # Generate the name you want to use for the uploaded file
-      file2name <- paste0("qFALID",input$qfalid_id_input,"_",input$qfalid_name_input,input$qfalid_surname_input,"_", inFile$name)
+      file2name <- paste0(prefix_files,"qFALID",input$qfalid_id_input,"_",input$qfalid_name_input,input$qfalid_surname_input,"_", inFile$name)
       
       # Get the path to the uploaded file
       filePath <- inFile$datapath
-      # Define the Google Drive folder where you want to upload the file
-      drive_folder <- drive_get(as_id("1ruFm-1qYVLIWwaJhvTjkMffqOuVOdGag"))
-      
-      # Upload the file to Google Drive
-      drive_upload(filePath, path = drive_folder, name = file2name)
+      tryCatch({
+        drive_folder <- drive_get(as_id("1ruFm-1qYVLIWwaJhvTjkMffqOuVOdGag"))
+        drive_files <- drive_ls(path = drive_folder)
+        
+        # Check if file already exists
+        if (!file2name %in% drive_files$name) {
+          drive_upload(filePath, path = drive_folder, name = file2name)
+          shinyalert::shinyalert(title = "Success!", text = "Micronics scan backed up in Google Drive", type = "success")
+        } else {
+          shinyalert::shinyalert(title = "Info", text = "Micronics scan already exists in Google Drive", type = "info")
+        }
+      }, error = function(e) {
+        shinyalert::shinyalert(title = "Warning!", text = "Could not back up Micronics scan in Google Drive", type = "warning")
+      })
     }
   })
   
@@ -92,6 +101,8 @@ qFalidSetupServer <- function(input, output, session) {
   
   conflicts <- reactiveVal(NULL)
   
+  layout_df_react<- reactiveVal(NULL)
+  
   observeEvent(input$get_data_btn, {
     if (has_required_columns()) {
       # Read the uploaded file
@@ -99,14 +110,11 @@ qFalidSetupServer <- function(input, output, session) {
       # Filter rows where "Tube ID" is not "No Code"
       uploaded_data_filter <- uploaded_data[uploaded_data$`Tube ID` != "No Code",]
       
-      # Read the Google Sheet
-      ss_url <- "https://docs.google.com/spreadsheets/d/143S5AmwM1OZ-1vbUSNmj8jRUcLQS8LQvDbjvgFauc4s"
-      sheet_data <- googlesheets4::read_sheet(ss_url,sheet="DNAStorage") %>% 
-        mutate_all(as.character)
+      dna_storage_database  = database_data[["DNAStorage"]]
       
       # Match "Tube ID" from uploaded_data with "MicronicID" from sheet_data
       matched_data <- uploaded_data_filter %>%
-        dplyr::left_join(sheet_data, by = c("Tube ID" = "MicronicID"))
+        dplyr::left_join(dna_storage_database, by = c("Tube ID" = "MicronicID"))
       # Create a summary table containing the relevant columns
       summary_table <- matched_data %>%
         dplyr::select(`Tube Position`, `Tube ID`, LabID, FieldID)
@@ -116,7 +124,7 @@ qFalidSetupServer <- function(input, output, session) {
       unmatched_rows <- is.na(summary_table$FieldID)
       if (any(unmatched_rows)) {
         unmatched_positions <- summary_table$`Tube Position`[unmatched_rows]
-        warning_message(paste("The following Tube Positions did not have a match in the Google Sheet:", paste(unmatched_positions, collapse = ", ")))
+        warning_message(paste("The following Tube Positions did not have a match in the database:", paste(unmatched_positions, collapse = ", ")))
       } else {
         warning_message(NULL) # Reset if no unmatched positions
       }
@@ -170,68 +178,86 @@ qFalidSetupServer <- function(input, output, session) {
       
       
       ## create layout
-      output$layout_table <- renderDT({
-        new_summary_table = summary_table_standards()
-        # Extract the 'Tube Position' column
-        positions <- new_summary_table$`Tube Position`
-        
-        # Convert the tube positions into rows (letters) and columns (numbers)
-        rows <- sapply(positions, function(pos) substr(pos, 1, 1))
-        columns <- sapply(positions, function(pos) as.numeric(substr(pos, 2, 3)))
-        
-        # Create an empty layout matrix with 8 rows (A-H) and 12 columns (1-12)
-        layout_matrix <- matrix("", nrow = 8, ncol = 12, dimnames = list(LETTERS[1:8], 1:12))
-        
-        # Fill the layout matrix with the combined 'LabID', 'FieldID', and 'Tube ID' values
-        for (i in seq_along(positions)) {
-          row_idx <- match(rows[i], LETTERS[1:8])
-          col_idx <- columns[i]
-          layout_matrix[row_idx, col_idx] <- paste(
-            new_summary_table$LabID[i],
-            new_summary_table$FieldID[i],
-            new_summary_table$`Tube ID`[i],
-            sep = "<br/>"
+      output$layout_button <- 
+        renderUI({
+          tagList(
+            actionButton("submit_data_qfalidsetup","Submit Data"),
+            renderDT({
+              new_summary_table = summary_table_standards()
+              # Extract the 'Tube Position' column
+              positions <- new_summary_table$`Tube Position`
+              
+              # Convert the tube positions into rows (letters) and columns (numbers)
+              rows <- sapply(positions, function(pos) substr(pos, 1, 1))
+              columns <- sapply(positions, function(pos) as.numeric(substr(pos, 2, 3)))
+              
+              # Create an empty layout matrix with 8 rows (A-H) and 12 columns (1-12)
+              layout_matrix <- matrix("", nrow = 8, ncol = 12, dimnames = list(LETTERS[1:8], 1:12))
+              
+              # Fill the layout matrix with the combined 'LabID', 'FieldID', and 'Tube ID' values
+              for (i in seq_along(positions)) {
+                row_idx <- match(rows[i], LETTERS[1:8])
+                col_idx <- columns[i]
+                layout_matrix[row_idx, col_idx] <- paste(
+                  new_summary_table$LabID[i],
+                  new_summary_table$FieldID[i],
+                  new_summary_table$`Tube ID`[i],
+                  sep = "<br/>"
+                )
+              }
+              
+              # Convert the layout matrix to a data frame for rendering
+              layout_df <- as.data.frame(layout_matrix)
+              layout_df_react(layout_df)
+              # Render the layout as a table
+              datatable(layout_df,
+                        escape = FALSE, # to allow HTML content in cells
+                        options = list(
+                          columnDefs = list(
+                            list(targets = "_all", orderable = FALSE, className = "dt-center"),
+                            list(targets = "_all", className = "dt-head-center")
+                          ),
+                          pageLength = -1,
+                          dom = 't',
+                          autoWidth = TRUE
+                        ),
+                        rownames = TRUE
+              ) %>%
+                formatStyle(columns = 0,
+                            fontWeight = 'bold',
+                            fontSize = '10px',
+                            padding = '1px 1px'
+                ) %>%
+                formatStyle(columns = 1:ncol(layout_df),
+                            borderRight = '1px solid black',
+                            borderBottom = '1px solid black',
+                            fontSize = '10px',
+                            padding = '1px 1px'
+                )
+            })
           )
-        }
-        
-        # Convert the layout matrix to a data frame for rendering
-        layout_df <- as.data.frame(layout_matrix)
-        
-        # Render the layout as a table
-        datatable(layout_df,
-                  escape = FALSE, # to allow HTML content in cells
-                  options = list(
-                    columnDefs = list(
-                      list(targets = "_all", orderable = FALSE, className = "dt-center"),
-                      list(targets = "_all", className = "dt-head-center")
-                    ),
-                    pageLength = -1,
-                    dom = 't',
-                    autoWidth = TRUE
-                  ),
-                  rownames = TRUE
-        ) %>%
-          formatStyle(columns = 0,
-                      fontWeight = 'bold',
-                      fontSize = '10px',
-                      padding = '1px 1px'
-          ) %>%
-          formatStyle(columns = 1:ncol(layout_df),
-                      borderRight = '1px solid black',
-                      borderBottom = '1px solid black',
-                      fontSize = '10px',
-                      padding = '1px 1px'
-          )
-      })
+        })
     }
   })
   
+  layout_df2_react <- reactive({
+    # Get the dataframe from the existing reactive expression
+    layout_df <- layout_df_react()
+    
+    # Apply the gsub function to each element of the dataframe
+    layout_df2 <- as.data.frame(lapply(layout_df, function(x) gsub("<br/>", "\n", x)))
+    
+    
+    colnames(layout_df2) = c(1:12)
+    layout_df2 <- cbind(Row = LETTERS[1:8], layout_df2)
+    # Return the modified dataframe
+    layout_df2
+  })# Call the save_table_as_image function
   
   
   
-  # Assuming that summary_table_standards is a reactiveVal
-  observe({
-    # Check if summary_table_standards is not NULL
+  
+  observeEvent(input$submit_data_qfalidsetup,{
     if (!is.null(summary_table_standards())) {
       table_output <- summary_table_standards()
       
@@ -249,50 +275,31 @@ qFalidSetupServer <- function(input, output, session) {
       )
       colnames(export_data) <- c("Row", "Column", "*Target Name", "*Sample Name", "*Biological Group")
       
-      output$qfalid_export_button_ui <- renderUI({
-        # You can check a condition here to determine whether to show the button
-        # For example, you might want to check if new_summary_table() is not NULL
-        if (!is.null(summary_table_standards())) {
-          tags$div(
-            downloadButton("download_file_qPCR", "Download CSV"),
-            style = "text-align: center;"  # CSS to center the content within the div
-          )
-        }
+      filename = 
+        paste(prefix_files,"qFALIDSetup_",input$qfalid_name_input,input$qfalid_surname_input,"_",
+              "qFALID",input$qfalid_id_input,"_",
+              format(Sys.Date(), "%d%b%Y"), ".csv", sep = "")
+      filename_path = paste0(path_for_files,"/qFALIDSetup/",filename)
+      
+      write.csv(export_data,filename_path, row.names = FALSE,quote = FALSE)
+      shinyalert::shinyalert(title = "Success!", text = paste0("CSV file saved successfully \n Location: ",
+                                                               filename_path), type = "success")
+      
+      tryCatch({
+        drive_folder <- drive_get(as_id("1LgL1yaU4YMz-x9brEhg16fYUzvlcospx"))
+        drive_upload(filename_path, path = drive_folder, name = filename)
+        shinyalert::shinyalert(title = "Success!", text = "CSV backed up in Google Drive", type = "success")
+      }, error = function(e) {
+        shinyalert::shinyalert(title = "Warning!", text = "Could not back up CSV in Google Drive", type = "warning")
       })
       
-      # Setup the download handler
-      output$download_file_qPCR <- downloadHandler(
-        filename = function() {
-          paste("qFALIDSetup_",input$qFalid_name_input,input$qFalid_surname_input,"_",
-                "qFALID",input$qfalid_id_input,"_",
-                format(Sys.Date(), "%d%b%Y"), ".csv", sep = "")
-        },
-        content = function(file) {
-          
-          write.csv(export_data,file, row.names = FALSE,quote = FALSE)
-          
-    
-          filename_upload = paste("qFALIDSetup_",input$qfalid_name_input,input$qfalid_surname_input,"_",
-                                  "qFALID",input$qfalid_id_input,"_",
-                                  format(Sys.Date(), "%d%b%Y"), ".csv", sep = "")
-          
-          drive_folder <- drive_get(as_id("1LgL1yaU4YMz-x9brEhg16fYUzvlcospx"))
-          drive_upload(file, path = drive_folder, name = filename_upload)
-          
-          
-        },
-        contentType = "text/csv"
-      )
+      filename = 
+        paste(prefix_files,"qFALIDSetup_",input$qFalid_name_input,input$qFalid_surname_input,"_",
+              "qFALID",input$qfalid_id_input,"_",
+              format(Sys.Date(), "%d%b%Y"), ".png", sep = "")
+      save_table_as_image_qFALIDSetup(layout_df2_react(), filename, path_for_files,input)
     }
   })
   
   
-  
-  
-  output$warning_message <- renderUI({
-    msg <- warning_message()
-    if (!is.null(msg)) {
-      tags$div(class = "alert alert-warning", msg)
-    }
-  })
 }

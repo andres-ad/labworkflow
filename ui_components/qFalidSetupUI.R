@@ -30,9 +30,6 @@ qFalidSetupUI <- function(){
            tags$hr(),
            uiOutput("get_data_button"),
            uiOutput("warning_message"),
-           DTOutput("layout_table"),
-           tags$hr(),
-           uiOutput("qfalid_export_button_ui"),
-           tags$hr()
+           uiOutput("layout_button")
   )
 }

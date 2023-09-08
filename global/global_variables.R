@@ -166,7 +166,7 @@ global_get_default_rec_value <- function() {
 
 
 
-global_study_codes = c("GenE8","BF_SMC","Test")
+global_study_codes = c("GenE8","BF_SMC","Controls","Test")
 
 global_provinces_names = list("South Africa" =c("KwaZuluNatal","Mpumalanga","Limpopo"),
                               "Angola" = "Placeholder",

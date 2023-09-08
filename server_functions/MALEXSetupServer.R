@@ -48,9 +48,22 @@ MALEXSetupServer <- function(input,output,session){
         list_inputs <- lapply(c("study_input_malex_", "content_input_", "received_barcodes_"), get_input, i)
         study_code <- ifelse(list_inputs[[1]] == "Other", get_input("other_study_input_malex_", i), list_inputs[[1]])
         content_type <- ifelse(list_inputs[[2]] == "Other", get_input("other_content_input_", i), list_inputs[[2]])
-        barcodes <- if (!is.null(list_inputs[[3]])) readLines(list_inputs[[3]]$datapath)[-1] else rep("", inputs[[3]])
+        barcodes <- if (!is.null(list_inputs[[3]])) readLines(list_inputs[[3]]$datapath) else rep("", inputs[[3]])
+        if (!is.null(list_inputs[[3]])){
+          idx_start = which(barcodes=="FieldIDs:")+1
+          barcodes = barcodes[idx_start:length(barcodes)]
+          barcodes = barcodes[barcodes != ""]
+          nbarcodes = length(barcodes)
+          
+          if(length(barcodes) != inputs[[3]]){
+            shinyalert(title= "warning",text=paste0("The number of samples entered does not match the number of scanned barcodes. Using the number of scanned barcodes for sample group ",i+1,"."), type="warning" )
+          }
+          
+          }else{
+          nbarcodes =  inputs[[3]]
+        }
         
-        sequences_list[[i + 1]] <- list(LabID = malex_generate_samples_seq(inputs[[1]], inputs[[2]], inputs[[3]]), Study_Code = rep(study_code, inputs[[3]]), Specimen_Type = rep(content_type, inputs[[3]]), FieldID = barcodes)
+        sequences_list[[i + 1]] <- list(LabID = malex_generate_samples_seq(inputs[[1]], inputs[[2]], nbarcodes), Study_Code = rep(study_code, nbarcodes), Specimen_Type = rep(content_type, nbarcodes), FieldID = barcodes)
       }
     }
     
