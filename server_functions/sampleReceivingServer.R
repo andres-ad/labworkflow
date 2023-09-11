@@ -78,6 +78,7 @@ sampleReceivingServer <- function(input,output,session){
     barcodes <- unlist(strsplit(sample_receiving_input_barcodes(), "\n"))
     # Check for duplicates
     duplicates <- barcodes[duplicated(barcodes)]
+    print(barcodes)
     
     
     rec = paste0("REV", input$sample_receiving_REV_input)
