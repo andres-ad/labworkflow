@@ -25,6 +25,8 @@ read_custom_format_malex <- function(file_path) {
 
 DNAStorageServer <- function(input, output, session) {
   
+  database_data_reactive = reactiveVal(database_data)
+  
   malex_micronic_joinButton = reactiveVal(FALSE)
   
   malex_dna_data_noheader <- reactive({
@@ -273,6 +275,8 @@ DNAStorageServer <- function(input, output, session) {
   
   
   observeEvent(input$dnastorage_submitdata, {
+    database_data=database_data_reactive()
+    
     joined_df_filtered = malex_micronic_joined_data()
     
     malex_file_input_custom_header <- malex_file_input_header_data()
@@ -300,258 +304,10 @@ DNAStorageServer <- function(input, output, session) {
       mutate(User = name, MALEX = malex, Date = format(Sys.Date(), "%d%b%Y"))
     colnames(joined_df_filtered_database) = c("Study","FieldID","LabID","MicronicID","User","MALEX","Date")
     
-    local_database_updated = database_data
-    local_database_updated[["DNAStorage"]] = rbind(database_data[["DNAStorage"]], joined_df_filtered_database)
+    local_database_updated = database_data_reactive()
+    local_database_updated[["DNAStorage"]] = rbind(database_data_reactive()[["DNAStorage"]], joined_df_filtered_database)
     database_data = update_database(local_database_updated, local_database_path, "DNAStorage", google_sheet_url)
-    
+    database_data_reactive(database_data)
   })
-  
-  # observeEvent(input$malex_micronic_join_button, {
-  
-  #     
-  #     joined_data_output$joinedData <- joined_data() %>% 
-  #       mutate(PlateName = input$dna_extraction_plate_name_input,
-  #              Freezer = input$dna_extraction_freezer_input,
-  #              Shelf = input$dna_extraction_shelf_input,
-  #              Basket = input$dna_extraction_basket_input,
-  #              PlateBarcode = rack_barcode) %>% 
-  #       select(Position,TubeID,Study_Code,
-  #              FieldID,Specimen_Type,
-  #              PlateName,Freezer,
-  #              Shelf,Basket,
-  #              PlateBarcode,LabID) %>% 
-  #       filter(TubeID!="No Code" & FieldID !="NA" & LabID!="NA" )
-  #     colnames(joined_data_output$joinedData) = c("Position","Tube ID","StudyCode",
-  #                                                 "StudySubject","SpecimenType",
-  #                                                 "PlateName","FreezerName",
-  #                                                 "ShelfName","BasketName",
-  #                                                 "PlateBarcode","Comment")
-  #     
-  #   }
-  # })
-  # 
-  # layout_react = reactiveVal(NULL)
-  # 
-  # 
-  # observeEvent(reactiveValuesToList(input)[c("malex_micronic_join_button","file_upload_built_file")],{
-  #   if(joinedfileUploaded()| malex_micronic_joinButton()){
-  #     joinedDataDB = joined_data_output$joinedData %>% 
-  #       mutate(User = ifelse(malex_micronic_joinButton(), data()$name,
-  #                            ifelse(joinedfileUploaded(),
-  #                                   str_extract(input$file_upload_built_file, "(?<=DNA_storage_)[^_]+"),
-  #                                   "Placeholder")),
-  #              MALEX = ifelse(malex_micronic_joinButton(), paste0("MALEX", data()$malex),
-  #                             ifelse(joinedfileUploaded(), 
-  #                                    paste0("MALEX",as.numeric(str_extract(input$file_upload_built_file, "(?<=_MALEX)\\d+"))),
-  #                                    "Placeholder")),
-  #              Date = ifelse(malex_micronic_joinButton(), format(Sys.Date(), "%d%b%Y"),
-  #                            ifelse(joinedfileUploaded(), 
-  #                                   str_remove_all(sapply(strsplit(input$file_upload_built_file$name,"_"),tail,1),".csv"),
-  #                                   "Placeholder"))
-  #       )%>% 
-  #       select('StudyCode','StudySubject','Comment','Tube ID','User','MALEX','Date')
-  #     colnames(joinedDataDB) = c("Study","FieldID","LabID","MicronicID","User","MALEX","Date")
-  #     joinedDataDB_react(joinedDataDB)
-  #     joined_df <- joined_data_output$joinedData %>% 
-  #       select(Position,Comment,'StudySubject','Tube ID')
-  #     colnames(joined_df) <- c("Position","LabID","FieldID","TubeID")
-  #     
-  #     # Initialize an empty layout with row names A-H and column names 1-12
-  #     joined_layout <- matrix(NA, nrow=8, ncol=12)
-  #     rownames(joined_layout) <- LETTERS[1:8]
-  #     colnames(joined_layout) <- as.character(1:12)
-  #     
-  #     
-  #     # Loop through each row of the dataframe
-  #     for(i in 1:nrow(joined_df)){
-  #       # Extract row and column info from the Position column (e.g., "E02")
-  #       row_index <- which(LETTERS == substr(joined_df$Position[i], 1, 1))
-  #       col_index <- as.integer(substr(joined_df$Position[i], 2, 3))
-  #       
-  #       # Assign LabID and FieldID to the correct position in the layout matrix
-  #       combined_joined_info <- paste(joined_df$LabID[i], joined_df$FieldID[i], joined_df$TubeID[i], sep = "<br/>")  # Use <br/> for line break
-  #       joined_layout[row_index, col_index] <- combined_joined_info
-  #     }
-  #     layout_react(joined_layout)
-  #     joinedfileUploaded(FALSE)
-  #     malex_micronic_joinButton(FALSE)
-  #   }
-  # })
-  # 
-  # ###### NOTE THAT THERE IS SOMETHING WERID HERE. THIS BIT WENT ON A LOOP UNLESS I MADE THOSE LAST 2 FALSE, I COULDNT FIGURE OUT WHAT WAS BEING UPDATED
-  # 
-  # observeEvent(layout_react(),{
-  #   if (!is.null(layout_react())){
-  #     
-  #     output$joined_layout_container <- renderUI({
-  #       DTOutput("joined_layout_output")
-  #     })
-  #     
-  #     # Render this table to the output
-  #     output$joined_layout_output <- renderDT({
-  #       datatable(layout_react(),
-  #                 escape = FALSE,  # to allow HTML content in cells
-  #                 options = list(
-  #                   columnDefs = list(
-  #                     list(targets = "_all", orderable = FALSE, className = "dt-center"),  # Disable sorting and center content
-  #                     list(targets = "_all", className = "dt-head-center")  # Center headers
-  #                   ),
-  #                   pageLength = -1,  # Display all rows
-  #                   dom = 't',  # Just the table (no other controls)
-  #                   autoWidth = TRUE,  # Auto adjust column width,
-  #                   redraw=TRUE
-  #                 ),
-  #                 rownames = TRUE
-  #       ) %>%
-  #         formatStyle(columns = 0,
-  #                     fontWeight = 'bold',
-  #                     fontSize = '10px',
-  #                     padding = '1px 1px'
-  #         ) %>%  # Make row names bold and set font size to 10
-  #         formatStyle(columns = 1:ncol(layout_react()),
-  #                     borderRight = '1px solid black',
-  #                     borderBottom = '1px solid black',
-  #                     fontSize = '10px',
-  #                     padding = '1px 1px'  # Set font size to 10 for cell contents
-  #         )
-  #     })
-  #   }
-  # })
-  # 
-  # 
-  # output$download_button_ui <- renderUI({
-  #   if (downloadActive()) {
-  #     tags$div(
-  #       downloadButton("download_joined_data", "Download CSV"),
-  #       style = "text-align: center;"  # CSS to center the content within the div
-  #     )
-  #   }
-  # })
-  # 
-  # output$download_joined_data <- downloadHandler(
-  #   
-  #   filename = function() {
-  #     name = str_remove_all(data()$name, " ")
-  #     malex = str_remove_all(data()$malex, " ")
-  #     
-  #     paste(prefix_files,"DNA_storage_", name, "_MALEX", malex, "_", format(Sys.Date(), "%d%b%Y"), ".csv", sep = "")
-  #   },
-  #   
-  #   content = function(file) {
-  #     write.csv(joined_data_output$joinedData, file, row.names = FALSE)
-  #     
-  #     
-  #     name = str_remove_all(data()$name, " ")
-  #     malex = str_remove_all(data()$malex, " ")
-  #     
-  #     fileupload_name = paste(prefix_files,"DNA_storage_", name, "_MALEX", malex, "_", format(Sys.Date(), "%d%b%Y"), ".csv", sep = "")
-  #     
-  #     drive_folder <- drive_get(as_id("1wEgG74WOaOWd1j0dR1xjmw7x0iyrqD2Z"))
-  #     drive_upload(file, path = drive_folder, name = fileupload_name)
-  #     
-  #   },
-  #   contentType = "text/csv"
-  # )
-  # 
-  # 
-  # 
-  # output$update_button_ui <- renderUI({
-  #   if (!is.null(layout_react())) {
-  #     tags$div(
-  #       actionButton("update_database_button", "Update Database"),
-  #       style = "text-align: center;"  # CSS to center the content within the div
-  #     )
-  #   }
-  # })
-  # 
-  # 
-  # observeEvent(input$update_database_button, {
-  #   ss_url <- "https://docs.google.com/spreadsheets/d/143S5AmwM1OZ-1vbUSNmj8jRUcLQS8LQvDbjvgFauc4s"
-  #   ss <- googlesheets4::gs4_get(ss_url)
-  #   sheet_data <- googlesheets4::read_sheet(ss,"DNAStorage")
-  #   
-  #   # Filter out rows where Study is "Controls"
-  #   filtered_sheet_data <- sheet_data %>% filter(Study != "Controls")%>% 
-  #     mutate_all(as.character)
-  #   
-  #   data2join =joinedDataDB_react() %>% 
-  #     mutate_all(as.character)
-  #   
-  #   
-  #   # Find matching rows
-  #   matching_rows <- data2join %>% 
-  #     semi_join(filtered_sheet_data, by = c("FieldID", "LabID", "MicronicID"))
-  #   
-  #   # If there are matching rows, display a warning
-  #   if (nrow(matching_rows) > 0) {
-  #     
-  #     # Extract the duplicate IDs
-  #     dup_field_ids <- unique(matching_rows$FieldID)
-  #     dup_lab_ids <- unique(matching_rows$LabID)
-  #     dup_Micronic_ids <- unique(matching_rows$MicronicID)
-  #     
-  #     # Extract rows of FieldID, LabID, MicronicID for the duplicate entries
-  #     dup_rows <- matching_rows %>%
-  #       select(FieldID, LabID, MicronicID)
-  #     
-  #     # Convert the data frame to groups of three values
-  #     rows_as_text <- lapply(1:nrow(dup_rows), function(i) {
-  #       paste("(", paste(dup_rows[i,], collapse = ", "), ")", sep = "")
-  #     })
-  #     
-  #     # Create a tag list for the warning message
-  #     warning_content <- tagList(
-  #       "The following samples are already in the Online Database:",
-  #       tags$br(), # Line break
-  #       "You must select Cancel or Proceed at the bottom of this window",
-  #       tags$br(), # Line break
-  #       "(Field ID, Lab ID, Micronic ID)",
-  #       tags$br(),
-  #       do.call(tagList, lapply(rows_as_text, function(item) {
-  #         list(tags$span(item), tags$br())
-  #       }))
-  #     )
-  #     
-  #     # Show the warning in a modal dialog
-  #     showModal(modalDialog(
-  #       title = "Warning",
-  #       warning_content,
-  #       footer = tagList(
-  #         actionButton("proceed_update", "Proceed with Update"),
-  #         actionButton("cancel_update", "Cancel")
-  #       )
-  #     ))
-  #     
-  #     
-  #     observeEvent(input$proceed_update, {
-  #       removeModal()
-  #       
-  #       # The rest of the update code here...
-  #       last_row <- nrow(sheet_data) + 2
-  #       target_range <- paste0("A", last_row, ":G", last_row + nrow(data2join))
-  #       googlesheets4::range_write(ss, data2join, range = target_range, col_names = FALSE)
-  #       shinyalert::shinyalert(title = "Success!", text = "Upload successful", type = "success")
-  #     })
-  #     
-  #     observeEvent(input$cancel_update, {
-  #       removeModal()
-  #       return()
-  #     })
-  #   } else {
-  #     # If there are no matching rows, just proceed with the update
-  #     last_row <- nrow(sheet_data) + 2
-  #     target_range <- paste0("A", last_row, ":G", last_row + nrow(data2join))
-  #     googlesheets4::range_write(ss, data2join, range = target_range, col_names = FALSE,sheet="DNAStorage")
-  #     
-  #     shinyalert::shinyalert(title = "Success!", text = "Upload successful", type = "success")
-  #   }
-  # })
-  # 
-  # downloadActive <- reactiveVal(FALSE)
-  # joined_data_output <- reactiveValues(joinedData=NULL)
-  # joinedfileUploaded <- reactiveVal(FALSE)
-  # joinedDataDB_react <-reactiveVal(FALSE)
-  # 
-  
   
 }

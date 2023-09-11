@@ -112,8 +112,8 @@ sampleReceivingServer <- function(input,output,session){
     
     # 3. Make a dataframe and update the database
     report_df <- data.frame(REV = rec, Study = study, Country = country, Province = province, FieldID = barcodes, Name = name, Date = datereport)
-    local_database_updated = database_data
-    local_database_updated[["Receiving"]] = rbind(database_data[["Receiving"]], report_df)
+    local_database_updated = database_data_reactive()
+    local_database_updated[["Receiving"]] = rbind(database_data_reactive()[["Receiving"]], report_df)
     database_data = update_database(local_database_updated, local_database_path, "Receiving", google_sheet_url)
     return(database_data)
   }

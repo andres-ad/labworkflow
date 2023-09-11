@@ -24,7 +24,7 @@ get_local_database_paths <- function(app_environment){
   local_database_paths <- list(
     testing = "C:/Data/NICD/DatabaseTesting.xlsx",
     production = "C:/Data/NICD/Database.xlsx",
-    andres = "C:/Data/NICD/DatabaseTestingAndres.xlsx",
+    andres = "C:/Data/NICD/DatabaseTestingAndres.xlsx"
   )
   
   local_database_path <- local_database_paths[[app_environment]]
