@@ -1,7 +1,7 @@
-app_environment <- "testing" # Change to production for the real world version  OR testing for testing
+app_environment <- "andres" # Change to production for the real world version  OR testing for testing
 path_for_files <- "C:/Data/NICD/DatabaseExports"
 
-prefix_files<-ifelse(app_environment=="testing","Testing_","")
+prefix_files<-ifelse(app_environment=="testing","Testing_",ifelse(app_environment=="andres","AndresTesting_",""))
 ### GLOBAL FUNCTIONS
 
 get_input_or_other <- function(input_val, other_input_val) {
@@ -11,7 +11,8 @@ get_input_or_other <- function(input_val, other_input_val) {
 get_google_sheet_url <- function(app_environment){
   google_sheet_urls <- list(
     testing = "https://docs.google.com/spreadsheets/d/1A0d3CuMQrZqMVknMuVqmx2uhYr2mJIzuP1k1cawxGqs",
-    production = "https://docs.google.com/spreadsheets/d/143S5AmwM1OZ-1vbUSNmj8jRUcLQS8LQvDbjvgFauc4s"
+    production = "https://docs.google.com/spreadsheets/d/143S5AmwM1OZ-1vbUSNmj8jRUcLQS8LQvDbjvgFauc4s",
+    andres = "https://docs.google.com/spreadsheets/d/16kV1t7m__MHgAclKrcBQf_qBLpgW_K6fxhF9Nf9D_e0"
   )
   
   google_sheet_url <- google_sheet_urls[[app_environment]]
@@ -22,7 +23,8 @@ get_local_database_paths <- function(app_environment){
   
   local_database_paths <- list(
     testing = "C:/Data/NICD/DatabaseTesting.xlsx",
-    production = "C:/Data/NICD/Database.xlsx"
+    production = "C:/Data/NICD/Database.xlsx",
+    andres = "C:/Data/NICD/DatabaseTestingAndres.xlsx",
   )
   
   local_database_path <- local_database_paths[[app_environment]]
