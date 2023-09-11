@@ -9,12 +9,12 @@ libraries <- c("shiny", "shinyjs", "rhandsontable",
                "gridExtra","readxl","openxlsx","httr")
 
 
-
-
-
-
-
 lapply(libraries, library, character.only = TRUE)
+
+drive_auth()
+gs4_auth()
+
+
 
 # source functions for UI and server in their respective folders
 lapply(list.files("ui_components",pattern="\\.R$",full.names = TRUE),
@@ -23,8 +23,6 @@ lapply(list.files("server_functions",pattern="\\.R$",full.names = TRUE),
        source)
 source("global/global_variables.R")
 source("global/malex_fxns.R")
-
-
 
 
 
