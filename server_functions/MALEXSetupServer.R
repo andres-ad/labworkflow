@@ -151,14 +151,20 @@ MALEXSetupServer <- function(input,output,session){
     
     repeated_ids <- function(column_name) updated_samples_data[[column_name]][duplicated(updated_samples_data[[column_name]]) & updated_samples_data[[column_name]]!="" & updated_samples_data[["Specimen_Type"]]!="Empty"]
     
-    for (field in c("LabID", "FieldID")) {
-      repeated_field_values = repeated_ids(field)
-      if(length(repeated_field_values) > 0) {
-        shinyalert::shinyalert("Warning", paste0(field," repeated: \n",paste(unique(repeated_field_values), collapse = ", ")), type = "warning")
-        malex_canDownload(FALSE)
-      }else {
-        malex_canDownload(TRUE)
-      }
+    repeated_field_values = repeated_ids("LabID")
+    if(length(repeated_field_values) > 0) {
+      shinyalert::shinyalert("Warning", paste0("LabID repeated: \n",paste(unique(repeated_field_values), collapse = ", ")), type = "warning")
+      malex_canDownload(FALSE)
+    }else {
+      malex_canDownload(TRUE)
+    }
+    
+    repeated_field_values = repeated_ids("FieldID")
+    if(length(repeated_field_values) > 0) {
+      shinyalert::shinyalert("Warning", paste0("FieldID repeated: \n",paste(unique(repeated_field_values), collapse = ", ")), type = "warning")
+      malex_canDownload(TRUE)
+    }else {
+      malex_canDownload(TRUE)
     }
     
     
