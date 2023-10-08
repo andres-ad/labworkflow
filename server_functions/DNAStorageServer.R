@@ -308,6 +308,7 @@ DNAStorageServer <- function(input, output, session) {
     local_database_updated[["DNAStorage"]] = rbind(database_data_reactive()[["DNAStorage"]], joined_df_filtered_database)
     database_data = update_database(local_database_updated, local_database_path, "DNAStorage", google_sheet_url)
     database_data_reactive(database_data)
+    print("Done!")
   })
   
 }

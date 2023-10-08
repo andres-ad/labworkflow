@@ -265,6 +265,7 @@ MALEXSetupServer <- function(input,output,session){
       }, error = function(e) {
         shinyalert::shinyalert(title = "Warning!", text = "Could not back up CSV in Google Drive", type = "warning")
       })
+      print("Done!")
     }  
   })
   

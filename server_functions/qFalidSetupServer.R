@@ -298,6 +298,7 @@ qFalidSetupServer <- function(input, output, session) {
               "qFALID",input$qfalid_id_input,"_",
               format(Sys.Date(), "%d%b%Y"), ".png", sep = "")
       save_table_as_image_qFALIDSetup(layout_df2_react(), filename, path_for_files,input)
+      print("Done!")
     }
   })
   
