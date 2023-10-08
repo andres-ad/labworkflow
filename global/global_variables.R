@@ -1,4 +1,4 @@
-app_environment <- "production" # Change to production for the real world version  OR testing for testing
+app_environment <- "andres" # Change to production for the real world version  OR testing for testing
 path_for_files <- "C:/Data/NICD/DatabaseExports"
 
 prefix_files<-ifelse(app_environment=="testing","Testing_",ifelse(app_environment=="andres","AndresTesting_",""))
@@ -171,12 +171,21 @@ global_get_default_rec_value <- function() {
 global_study_codes = c("GenE8","BF_SMC","Controls","Test")
 
 global_provinces_names = list("South Africa" =c("KwaZuluNatal","Mpumalanga","Limpopo"),
-                              "Angola" = "Placeholder",
+                              "Angola" = c(sort(c("Benguela","Lunda Sul","Namibe","Bie","Uige","Zaire","Cuando Cubango","Moxico")),"NA"),
                               "Burkina Faso" = "None",
                               "Eswatini" = "Placeholder",
                               "Namibia" = "Placeholder",
-                              "Zambia" = "Placeholder",
+                              "Zambia" = sort(c("Central","Copperbelt","Eastern","Luapula","Lusaka","Muchinga","North-Western","Northern","Southern","Western","NA")),
                               "Lab" = "Controls")
+
+global_healthfacilities_names = list("South Africa" =c("NA"),
+                              "Angola" = c(sort(c("HG Benguela","HM Benguela","HM Saurimo","CS Txizainga","CS Zona Sul","CS 5 de Abril","CS Piloto","HM Nharea","CS Quitexe","HM Damba","HM M Congo","HMI M Congo","HG Menongue","HM Calai","HM Luena","HM Luau")),"NA"),
+                              "Burkina Faso" = "None",
+                              "Eswatini" = "Placeholder",
+                              "Namibia" = "Placeholder",
+                              "Zambia" = c(sort(c("Roan","Mpumba","Twatasha","Mporokoso","Cheeba","Chembe","Chingi","Chitanda","Chiwempala","Kankumba","Katima","Masaiti","Milenge","Mulilima","Mwinilunga","Mzigawa","Nakachenje","Namseche","Nkeyema","Nsama","Nzoche","Siamuleya")),"NA"),
+                              "Lab" = "Controls")
+
 
 global_country_names = names(global_provinces_names)
 

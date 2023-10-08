@@ -13,6 +13,19 @@ sampleReceivingServer <- function(input,output,session){
     tagList(province_input, other_province_input)
   })
   
+  output$sample_receiving_hf_ui <- renderUI({
+    province_input <- selectInput("sample_receiving_healthfacility_input", label = "HF:",
+                                  choices = c(global_healthfacilities_names[[input$sample_receiving_country_input]],
+                                              "Other"))
+    
+    other_province_input <- conditionalPanel(
+      condition = 'input.sample_receiving_healthfacility_input == "Other"',
+      textInput("sample_receiving_other_healthfacility_input", label = "Other HF:", placeholder = "Enter HF")
+    )
+    
+    tagList(province_input, other_province_input)
+  })
+  
   
   
   # Make a reactive variable to store the number of barcodes when scanned
@@ -28,6 +41,7 @@ sampleReceivingServer <- function(input,output,session){
     barcodes <- input$sample_receiving_barcode_input
     if (!is.null(barcodes)) {
       barcodes <- unlist(strsplit(barcodes, "\n"))
+      barcodes <- barcodes[barcodes!=""]
       duplicates <- barcodes[duplicated(barcodes)]
       if (length(duplicates) > 0) {
         shinyalert::shinyalert(
@@ -66,16 +80,19 @@ sampleReceivingServer <- function(input,output,session){
     time_cleaned <- gsub("[^0-9]", "", format(Sys.time(), "%H%M"))
     country <- get_input_or_other(input$sample_receiving_country_input, input$sample_receiving_other_country_input)
     province <- get_input_or_other(input$sample_receiving_province_input, input$sample_receiving_other_province_input)
+    healthfacility <- get_input_or_other(input$sample_receiving_healthfacility_input, input$sample_receiving_other_healthfacility_input)
     country_cleaned = gsub("[^A-Za-z0-9]", "",country)
     province_cleaned = gsub("[^A-Za-z0-9]", "",province)
+    healthfacility_cleaned = gsub("[^A-Za-z0-9]", "",healthfacility)
     rec_cleaned = paste0("REV",input$sample_receiving_REV_input)
     
-    generated_filename <- paste0("receiving_", name_cleaned, "_",country_cleaned,"_",province_cleaned,"_",rec_cleaned,"_", date_cleaned, "_", time_cleaned, ".txt")
+    generated_filename <- paste0("receiving_", name_cleaned, "_",country_cleaned,"_",province_cleaned,"_",healthfacility_cleaned,"_",rec_cleaned,"_", date_cleaned, "_", time_cleaned, ".txt")
     return(generated_filename)
   }
   
   process_barcode_report <- function(){
     barcodes <- unlist(strsplit(sample_receiving_input_barcodes(), "\n"))
+    barcodes <- barcodes[barcodes!=""]
     # Check for duplicates
     duplicates <- barcodes[duplicated(barcodes)]
     
@@ -84,6 +101,7 @@ sampleReceivingServer <- function(input,output,session){
     study <- get_input_or_other(input$sample_receiving_study_input, input$sample_receiving_other_study_input)
     country <- get_input_or_other(input$sample_receiving_country_input, input$sample_receiving_other_country_input)
     province <- get_input_or_other(input$sample_receiving_province_input, input$sample_receiving_other_province_input)
+    healthfacility <- get_input_or_other(input$sample_receiving_healthfacility_input, input$sample_receiving_other_healthfacility_input)
     name <- paste0(input$sample_receiving_name_input, input$sample_receiving_surname_input)
     datereport <- format(input$sample_receiving_date_input, "%d%b%Y")
     
@@ -95,7 +113,8 @@ sampleReceivingServer <- function(input,output,session){
       "Study:", study,
       "Country:", country,
       "Province:", province,
-      "FieldIDs:", sample_receiving_input_barcodes(),
+      "Health Facility:", healthfacility,
+      "FieldIDs:", sample_receiving_input_barcodes()[sample_receiving_input_barcodes()!=""],
       sep = "\n"
     )
     filename <- sample_receiving_generate_filename()
@@ -111,9 +130,14 @@ sampleReceivingServer <- function(input,output,session){
     })
     
     # 3. Make a dataframe and update the database
-    report_df <- data.frame(REV = rec, Study = study, Country = country, Province = province, FieldID = barcodes, Name = name, Date = datereport)
+    report_df <- data.frame(REV = rec, Study = study, Country = country, Province = province, HF = healthfacility, FieldID = barcodes, Name = name, Date = datereport)
     local_database_updated = database_data_reactive()
-    local_database_updated[["Receiving"]] = rbind(database_data_reactive()[["Receiving"]], report_df)
+    newcolumns = colnames(report_df)[!colnames(report_df) %in% colnames(database_data_reactive()[["Receiving"]])]
+    for(newcolumn in newcolumns){
+      local_database_updated[["Receiving"]][,newcolumn] = NA
+    }
+    local_database_updated[["Receiving"]]=local_database_updated[["Receiving"]][colnames(report_df)]
+    local_database_updated[["Receiving"]] = rbind(local_database_updated[["Receiving"]], report_df)
     database_data = update_database(local_database_updated, local_database_path, "Receiving", google_sheet_url)
     return(database_data)
   }
@@ -122,6 +146,7 @@ sampleReceivingServer <- function(input,output,session){
   observeEvent(input$sample_receiving_generate_report_button, {
     database_data=database_data_reactive()
     barcodes <- unlist(strsplit(sample_receiving_input_barcodes(), "\n"))
+    barcodes <- barcodes[barcodes!=""]
     database_barcodes = database_data[["Receiving"]]$FieldID
     # Check for duplicates
     duplicates <- barcodes[barcodes %in% database_barcodes]
@@ -151,6 +176,7 @@ sampleReceivingServer <- function(input,output,session){
     } else{
       database_data = process_barcode_report()
       database_data_reactive(database_data)
+      print("Done!")
     }
   })
   

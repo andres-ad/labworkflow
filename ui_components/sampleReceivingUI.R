@@ -3,20 +3,20 @@ sampleReceivingUI <- function(){
            h4("Please enter one province/country at a time"),
            br(),
            fluidRow(
-             column(4,
+             column(3,
                     textInput("sample_receiving_name_input", label = "Name*:", placeholder = "Enter Name")
              ),
-             column(4,
+             column(3,
                     textInput("sample_receiving_surname_input", label = "Surname*:", placeholder = "Enter Surname")
              ),
-             column(4,
+             column(3,
                     dateInput("sample_receiving_date_input", label = "Date*:", value = Sys.Date())
-             )
-           ),
-           fluidRow(
+             ),
              column(3,
                     numericInput("sample_receiving_REV_input", label = "REV*:", value=global_get_default_rec_value(),min=0)
-                    ),
+             ),
+           ),
+           fluidRow(
              column(3,
                     selectInput("sample_receiving_study_input", label = "Study*:", 
                                 choices = c(global_study_codes, "Other"),
@@ -38,6 +38,9 @@ sampleReceivingUI <- function(){
              ),
              column(3,
                     uiOutput("sample_receiving_province_ui")
+             ),
+             column(3,
+                    uiOutput("sample_receiving_hf_ui")
              )
            ),
            
