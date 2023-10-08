@@ -1,14 +1,14 @@
 DNAStorageUI <- function(){
   tabPanel("DNA Storage", 
            fluidRow(
-             column(9, h4("Upload DNA extraction file"))#,
+             column(9, h4("Upload MALEX setup file"))#,
              # column(3, 
              #        actionButton("joined_file_button","I have the joined file!")
              # )
            ),
-           h6("This is the CSV file created in DNA extraction Setup tab that links LabID to FieldID"),
+           h6("This is the CSV file created in MALEX Setup tab that links LabID to FieldID"),
            fluidRow(
-             column(6,fileInput('malex_file_input', 'Choose DNA Extraction Setup File',  
+             column(6,fileInput('malex_file_input', 'Choose MALEX Setup File',  
                                 accept = c('text/csv', 'text/comma-separated-values,text/plain', '.csv'))
              ),
              column(6,
