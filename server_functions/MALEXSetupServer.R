@@ -1,5 +1,8 @@
 MALEXSetupServer <- function(input,output,session){
   
+  database_data_reactive = reactiveVal(database_data)
+  
+  
   malex_canDownload = reactiveVal(FALSE)
   
   malex_table_generated <- reactiveVal(FALSE)
@@ -137,7 +140,7 @@ MALEXSetupServer <- function(input,output,session){
     updated_samples_data <- malex_samples_data()%>% 
       filter(Specimen_Type!="Empty")
     
-    missing_field_ids <- setdiff(updated_samples_data$FieldID, database_data[["Receiving"]]$FieldID)
+    missing_field_ids <- setdiff(updated_samples_data$FieldID, database_data_reactive()[["Receiving"]]$FieldID)
     
     if (length(missing_field_ids) != 0) {
       # If the condition is not met, show a warning and prevent the download
@@ -173,16 +176,16 @@ MALEXSetupServer <- function(input,output,session){
       
       malex_layout_generated(TRUE)
       df <- malex_samples_data() %>% filter(Specimen_Type!="Empty") %>% 
-        left_join(database_data[["Receiving"]],by = "FieldID")
+        left_join(database_data_reactive()[["Receiving"]],by = "FieldID")
       
       # Create an empty layout matrix with 8 rows (A-H) and 12 columns (1-12)
       layout <- matrix("", nrow = 8, ncol = 12, dimnames = list(LETTERS[1:8], 1:12))
       
       row_idx <- match(substr(df$Position, 1, 1), LETTERS)
       col_idx <- as.integer(substr(df$Position, 2, 3))
-      layout[cbind(row_idx, col_idx)] <- paste(df$LabID, df$FieldID, df$Province, df$Country, sep = "<br/>")
+      layout[cbind(row_idx, col_idx)] <- paste(df$LabID, df$FieldID, df$HF, df$Province, df$Country, sep = "<br/>")
       
-      label_col <- rep("LabID<br/>FieldID<br/>Province<br/>Country", nrow(layout))
+      label_col <- rep("LabID<br/>FieldID<br/>HF<br/>Province<br/>Country", nrow(layout))
       layout_with_labels <- cbind(layout, label_col)
       
       # Convert the layout matrix to a data frame for rendering
