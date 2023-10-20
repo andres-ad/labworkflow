@@ -1,6 +1,6 @@
 app_environment <- "production" # Change to production for the real world version  OR testing for testing
 
-path_for_files <- ifelse(app_environment=="andres","G:/My Drive/EPPIcenter/Data/NICD/DatabaseExports","C/Data/NICD/DatabaseExports")
+path_for_files <- ifelse(app_environment=="andres","G:/My Drive/EPPIcenter/Data/NICD/DatabaseExports","C:/Data/NICD/DatabaseExports")
 
 prefix_files<-ifelse(app_environment=="testing","Testing_",ifelse(app_environment=="andres","AndresTesting_",""))
 ### GLOBAL FUNCTIONS
@@ -23,9 +23,9 @@ get_google_sheet_url <- function(app_environment){
 get_local_database_paths <- function(app_environment){
   
   local_database_paths <- list(
-    testing = ifelse(app_environment=="andres","G:/My Drive/EPPIcenter/Data/NICD/DatabaseTesting.xlsx","C/Data/NICD/DatabaseTesting.xlsx"),
-    production = ifelse(app_environment=="andres","G:/My Drive/EPPIcenter/Data/NICD/Database.xlsx","C/Data/NICD/Database.xlsx"),
-    andres = ifelse(app_environment=="andres","G:/My Drive/EPPIcenter/Data/NICD/DatabaseTestingAndres.xlsx","C/Data/NICD/DatabaseTestingAndres.xlsx")
+    testing = ifelse(app_environment=="andres","G:/My Drive/EPPIcenter/Data/NICD/DatabaseTesting.xlsx","C:/Data/NICD/DatabaseTesting.xlsx"),
+    production = ifelse(app_environment=="andres","G:/My Drive/EPPIcenter/Data/NICD/Database.xlsx","C:/Data/NICD/Database.xlsx"),
+    andres = ifelse(app_environment=="andres","G:/My Drive/EPPIcenter/Data/NICD/DatabaseTestingAndres.xlsx","C:/Data/NICD/DatabaseTestingAndres.xlsx")
   )
   
   local_database_path <- local_database_paths[[app_environment]]
